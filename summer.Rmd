@@ -512,22 +512,27 @@ Identify that following variables can help to answer this task.
 
 * product_color  
 * product_variation_size_id  
-* shipping_option_name  
 
 Setting up data frame with relevant variables. 
 
 ```{r}
-df2 <- cloth2 %>% dplyr::select(units_sold, product_color, product_variation_size_id, shipping_option_name)
+df2 <- cloth2 %>% dplyr::select(units_sold, product_color, product_variation_size_id)
+
+```
+**1. product_color** 
+
+There are 87 colour categories and a few colours dominating the majority of the sales. It is quite *pareto*. The top 5 colours are black, white, grey, purple, and blue. 
+
+
+```{r, fig.width=10, fig.height=12, warning=FALSE}
+
+# df
 
 color_df <- df2 %>% 
   group_by(product_color) %>% 
   summarise(total = sum(units_sold))
 
-
-```
-
-
-```{r, fig.width=10, fig.height=12, warning=FALSE}
+# plot
 
 ggplot(color_df, aes(y = fct_reorder(product_color, total), x = total, group = 1)) +
   geom_point(size = 3) +
@@ -535,10 +540,47 @@ ggplot(color_df, aes(y = fct_reorder(product_color, total), x = total, group = 1
   theme_modern_rc() +
   labs(x = "Total Sold per Item Category",
        y = "Colour Category",
-       title = "Top 5 Best-selling colours are Black, White, Grey, Purple, and Blue") +
+       title = "Top 5 Best-Selling Colours are Black, White, Grey, Purple, and Blue") +
   theme(plot.title = element_text(size = 17))
 
 
+```
+
+**2. product_variation_size_id** 
+
+Another *pareto* trend. There are 63 different level of size "classes" in the dataset. The top 5 best-selling sizes are S, M, XS, L and XXS.
+
+```{r, fig.width=10, fig.height=12, warning=FALSE}
+
+# df
+
+size_df <- df2 %>% 
+  group_by(product_variation_size_id) %>% 
+  summarise(total = sum(units_sold))
+
+# plot
+
+ggplot(size_df, aes(y = fct_reorder(product_variation_size_id, total), x = total, group = 1)) +
+  geom_point(size = 3, color = "green") +
+  geom_line(size = 1, color = "green") +
+  theme_modern_rc() +
+  labs(x = "Total Sold per Item Category",
+       y = "Size Category",
+       title = "Top 5 Best-Selling Sizes are S, M, XS, L and XXS") +
+  theme(plot.title = element_text(size = 17))
+
+
+```
+
+
+
+### 5.3 
+
+Do bad products sell ? How about the relationship between the quality of a product (ratings) and its success ? Does the price factor into this ?
+
+
+```{r}
+cloth2
 ```
 
 

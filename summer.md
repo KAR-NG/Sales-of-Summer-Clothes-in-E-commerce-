@@ -23,6 +23,7 @@ Kar Ng
     -   [5.1 Validated! Human sensitive to price
         drops.](#51-validated-human-sensitive-to-price-drops)
     -   [5.2 Top product categories](#52-top-product-categories)
+    -   [5.3](#53)
 -   [6 Statistical Analysis](#6-statistical-analysis)
 -   [Reference](#reference)
 
@@ -3236,31 +3237,96 @@ products so that you know what sells best.**
 Identify that following variables can help to answer this task.
 
 -   product\_color  
--   product\_variation\_size\_id  
--   shipping\_option\_name
+-   product\_variation\_size\_id
 
 Setting up data frame with relevant variables.
 
 ``` r
-df2 <- cloth2 %>% dplyr::select(units_sold, product_color, product_variation_size_id, shipping_option_name)
+df2 <- cloth2 %>% dplyr::select(units_sold, product_color, product_variation_size_id)
+```
+
+**1. product\_color**
+
+There are 87 colour categories and a few colours dominating the majority
+of the sales. It is quite *pareto*. The top 5 colours are black, white,
+grey, purple, and blue.
+
+``` r
+# df
 
 color_df <- df2 %>% 
   group_by(product_color) %>% 
   summarise(total = sum(units_sold))
-```
 
-``` r
+# plot
+
 ggplot(color_df, aes(y = fct_reorder(product_color, total), x = total, group = 1)) +
   geom_point(size = 3) +
   geom_line(size = 1) +
   theme_modern_rc() +
   labs(x = "Total Sold per Item Category",
        y = "Colour Category",
-       title = "Top 5 Best-selling colours are Black, White, Grey, Purple, and Blue") +
+       title = "Top 5 Best-Selling Colours are Black, White, Grey, Purple, and Blue") +
   theme(plot.title = element_text(size = 17))
 ```
 
 ![](summer_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+
+**2. product\_variation\_size\_id**
+
+Another *pareto* trend. There are 63 different level of size “classes”
+in the dataset. The top 5 best-selling sizes are S, M, XS, L and XXS.
+
+``` r
+# df
+
+size_df <- df2 %>% 
+  group_by(product_variation_size_id) %>% 
+  summarise(total = sum(units_sold))
+
+# plot
+
+ggplot(size_df, aes(y = fct_reorder(product_variation_size_id, total), x = total, group = 1)) +
+  geom_point(size = 3, color = "green") +
+  geom_line(size = 1, color = "green") +
+  theme_modern_rc() +
+  labs(x = "Total Sold per Item Category",
+       y = "Size Category",
+       title = "Top 5 Best-Selling Sizes are S, M, XS, L and XXS") +
+  theme(plot.title = element_text(size = 17))
+```
+
+![](summer_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+
+### 5.3
+
+Do bad products sell ? How about the relationship between the quality of
+a product (ratings) and its success ? Does the price factor into this ?
+
+``` r
+cloth2
+```
+
+    ## # A tibble: 1,457 x 29
+    ##    title_orig              price retail_price price_drop discount_per units_sold
+    ##    <fct>                   <dbl>        <dbl>      <dbl>        <dbl>      <dbl>
+    ##  1 2020 Summer Vintage Fl~ 16              14     -2              -14        100
+    ##  2 Women's Casual Summer ~  8              22     14               64      20000
+    ##  3 2020 New Arrival Women~  8              43     35               81        100
+    ##  4 Hot Summer Cool T Shir~  8               8      0                0       5000
+    ##  5 Women Summer Shorts La~  2.72            3      0.280            9        100
+    ##  6 Plus Size Summer Women~  3.92            9      5.08            56         10
+    ##  7 Women Fashion Loose La~  7               6     -1              -17      50000
+    ##  8 Women's Baggy Tunic Dr~ 12              11     -1               -9       1000
+    ##  9 Women's Summer Casual ~ 11              84     73               87        100
+    ## 10 Summer Women Plus Size~  5.78           22     16.2             74       5000
+    ## # ... with 1,447 more rows, and 23 more variables: uses_ad_boosts <fct>,
+    ## #   rating <dbl>, badges_count <dbl>, badge_local_product <dbl>,
+    ## #   badge_product_quality <dbl>, badge_fast_shipping <dbl>, tags <fct>,
+    ## #   product_color <fct>, product_variation_size_id <fct>,
+    ## #   product_variation_inventory <dbl>, shipping_option_name <fct>,
+    ## #   shipping_option_price <dbl>, shipping_is_express <fct>,
+    ## #   countries_shipped_to <dbl>, inventory_total <dbl>, ...
 
 -   Do bad products sell ? How about the relationship between the
     quality of a product (ratings) and its success ? Does the price
