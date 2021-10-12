@@ -26,6 +26,7 @@ library(kableExtra)
 library(skimr)
 library(lubridate)
 library(hrbrthemes)
+library(hrbrthemes)
 
 # Format setting
 
@@ -434,6 +435,35 @@ summary(cloth2$discount_per)
 Why don't we use price_drop instead? Because produces are sold at different prices, the sample sizes of expensive products are different than the products at cheaper prices. Creating a discount percentage columne (discount_per) will aid the scale down the value to make our observation easier (Hopefully).
  
 
+### 4.7 New Metric: price_class
+
+It can be useful to create classes for different prices. Based on the dataset, the price ranges between 0 to 50. 
+
+
+```{r}
+summary(cloth2$price)
+
+```
+The result of the classes.
+
+```{r}
+cloth2 <- cloth2 %>% 
+  mutate(price_class = case_when(price < 10 ~ "EUR<10",
+                                 price > 10 & price < 20 ~ "EUR10-20",
+                                 price > 20 & price < 30 ~ "EUR20-30",
+                                 price > 30 & price < 40 ~ "EUR30-40",
+                                 TRUE ~ "EUR40-50"),
+         price_class = as.factor(price_class)) %>% 
+  relocate(price_class, .after = price)
+
+levels(cloth2$price_class)
+
+```
+
+
+
+
+
 ## 5 Exploratory Data Analysis (EDA)
 
 This section will analyse the 5 main tasks listed in the introduction.
@@ -447,10 +477,7 @@ It will be in relevant to the sales of a product in relation to the magnitude of
 Following is the first graph, it appears that there is no obvious relation between discounts and unit sold. 
 
 
-```{r, fig.width=10, fig.height=6}
-
-install.packages("hrbrthemes")
-library(hrbrthemes)
+```{r, fig.width=10, fig.height=6, warning=FALSE}
 
 ggplot(cloth2, aes(x = discount_per, y = units_sold)) +
   geom_jitter(size = 4, alpha = 0.2, colour = "green") +
@@ -466,7 +493,7 @@ ggplot(cloth2, aes(x = discount_per, y = units_sold)) +
 
 However, following bar chart shows that 
 
-```{r, fig.width=9}
+```{r, fig.width=9, warning=FALSE}
 
 df1 <- cloth2 %>% 
   select(discount_per, units_sold) %>% 
@@ -504,7 +531,7 @@ To explain why discount rate at "0%" has the highest items sold, it is because t
 
 
 
-### 5.2 Top product categories 
+### 5.2 Typical top product categories 
 
 Second analysis task of this project: **Look for top categories of products so that you know what sells best.**
 
@@ -561,8 +588,8 @@ size_df <- df2 %>%
 # plot
 
 ggplot(size_df, aes(y = fct_reorder(product_variation_size_id, total), x = total, group = 1)) +
-  geom_point(size = 3, color = "green") +
-  geom_line(size = 1, color = "green") +
+  geom_point(size = 3, color = "yellow") +
+  geom_line(size = 1, color = "yellow") +
   theme_modern_rc() +
   labs(x = "Total Sold per Item Category",
        y = "Size Category",
@@ -574,20 +601,61 @@ ggplot(size_df, aes(y = fct_reorder(product_variation_size_id, total), x = total
 
 
 
-### 5.3 
+### 5.3 The Effect of Rating on Sales
 
-Do bad products sell ? How about the relationship between the quality of a product (ratings) and its success ? Does the price factor into this ?
+The third analysis task: **Do bad products sell ? How about the relationship between the quality of a product (ratings) and its success ? Does the price factor into this ?**
+
+Yes, the better the rating, the better the sales of the product. From following plot, I can see that as long as the product has a rating of above 3, it will sell. 
+
+The price does not have obvious relationship with the rating and sales.
+
+```{r, fig.width=9, fig.height=6, warning=FALSE}
+
+ggplot(cloth2, aes(x = rating, y = units_sold, colour = price_class)) +
+  geom_point(size = 3, alpha = 0.4) +
+  theme_modern_rc() +
+  labs(x = "Product Rating (1 - 5)",
+       y = "Units Sold (Count)",
+       title = "Best Performing Rating Falls Between 3 - 5") +
+  theme(plot.title = element_text(vjust = 2)) +
+  facet_wrap(~price_class)
+
+```
 
 
-```{r}
-cloth2
+### 5.4 Logarithmically graphing the Fame
+
+The fourth analysis task of this project asked: **Do seller's fame factor into top products?**
+
+Two options here, whether I should use "merchant_rating_count" and "merchant_rating" for this analysis. The "merchant_rating_count" will indicate total number of rating, which would indicate how popular the seller is. On the other hand, "merchant_rating" will only give the overall rating of the seller, and it won't tell how many buyers are voting for the seller.
+
+Therefore, I will use "merchant_rating_count" to be an indication of "fame factor" as specified by the task of this section. 
+
+
+nifty chart 
+
+```{r, warning=FALSE}
+
+df5 <- cloth2 %>% dplyr::select(units_sold, product_color, product_variation_size_id, 
+                                  merchant_rating_count, merchant_rating_count, merchant_rating)
+
+
+ggplot(df5, aes(x = log(merchant_rating_count), y = units_sold)) +
+  geom_point(colour = "orange") +
+  geom_smooth() +
+  theme_modern_rc()
+
+
 ```
 
 
 
-* Do bad products sell ? How about the relationship between the quality of a product (ratings) and its success ? Does the price factor into this ?
 
-* Do seller's fame factor into top products ?
+
+
+
+
+
 
 * Do the number of tags (making a product more discoverable) factor into the success of a product ?
 

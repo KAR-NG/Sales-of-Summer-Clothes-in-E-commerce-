@@ -18,12 +18,17 @@ Kar Ng
     -   [4.5 Examining the Rating](#45-examining-the-rating)
     -   [4.6 New Metric: price\_drop](#46-new-metric-price_drop)
     -   [4.6 New Metric: discount\_per](#46-new-metric-discount_per)
+    -   [4.7 New Metric: price\_class](#47-new-metric-price_class)
 -   [5 Exploratory Data Analysis
     (EDA)](#5-exploratory-data-analysis-eda)
     -   [5.1 Validated! Human sensitive to price
         drops.](#51-validated-human-sensitive-to-price-drops)
-    -   [5.2 Top product categories](#52-top-product-categories)
-    -   [5.3](#53)
+    -   [5.2 Typical top product
+        categories](#52-typical-top-product-categories)
+    -   [5.3 The Effect of Rating on
+        Sales](#53-the-effect-of-rating-on-sales)
+    -   [5.4 Logarithmically graphing the
+        Fame](#54-logarithmically-graphing-the-fame)
 -   [6 Statistical Analysis](#6-statistical-analysis)
 -   [Reference](#reference)
 
@@ -38,6 +43,7 @@ library(tidyverse)
 library(kableExtra)
 library(skimr)
 library(lubridate)
+library(hrbrthemes)
 library(hrbrthemes)
 
 # Format setting
@@ -3060,6 +3066,35 @@ than the products at cheaper prices. Creating a discount percentage
 columne (discount\_per) will aid the scale down the value to make our
 observation easier (Hopefully).
 
+### 4.7 New Metric: price\_class
+
+It can be useful to create classes for different prices. Based on the
+dataset, the price ranges between 0 to 50.
+
+``` r
+summary(cloth2$price)
+```
+
+    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    ##   1.000   5.860   8.000   8.367  11.000  49.000
+
+The result of the classes.
+
+``` r
+cloth2 <- cloth2 %>% 
+  mutate(price_class = case_when(price < 10 ~ "EUR<10",
+                                 price > 10 & price < 20 ~ "EUR10-20",
+                                 price > 20 & price < 30 ~ "EUR20-30",
+                                 price > 30 & price < 40 ~ "EUR30-40",
+                                 TRUE ~ "EUR40-50"),
+         price_class = as.factor(price_class)) %>% 
+  relocate(price_class, .after = price)
+
+levels(cloth2$price_class)
+```
+
+    ## [1] "EUR<10"   "EUR10-20" "EUR20-30" "EUR40-50"
+
 ## 5 Exploratory Data Analysis (EDA)
 
 This section will analyse the 5 main tasks listed in the introduction.
@@ -3079,14 +3114,6 @@ Following is the first graph, it appears that there is no obvious
 relation between discounts and unit sold.
 
 ``` r
-install.packages("hrbrthemes")
-```
-
-    ## Warning: package 'hrbrthemes' is in use and will not be installed
-
-``` r
-library(hrbrthemes)
-
 ggplot(cloth2, aes(x = discount_per, y = units_sold)) +
   geom_jitter(size = 4, alpha = 0.2, colour = "green") +
   labs(x = "Discount (%)",
@@ -3097,52 +3124,7 @@ ggplot(cloth2, aes(x = discount_per, y = units_sold)) +
   scale_y_continuous(labels = function(x)paste0((x/1000), "k"))
 ```
 
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font family not
-    ## found in Windows font database
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font family not
-    ## found in Windows font database
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font family not
-    ## found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-    ## font family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-![](summer_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](summer_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 However, following bar chart shows that
 
@@ -3175,46 +3157,7 @@ ggplot(df1, aes(x = class, y = total, fill = class)) +
         axis.title.x = element_text(margin = margin(10, 0, 0, 0)))
 ```
 
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font family not
-    ## found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-    ## font family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-![](summer_files/figure-gfm/unnamed-chunk-24-1.png)<!-- --> Please be
+![](summer_files/figure-gfm/unnamed-chunk-26-1.png)<!-- --> Please be
 aware. This result shows a tend but is not a well-designed proper
 experiment. It is a trend based on collected observation. However, it do
 show a trend that the higher the discount rate, the more the total
@@ -3229,7 +3172,7 @@ price-drop magnitude. Though these items are having far cheap prices but
 also having a value that is enough to build trust from consumer and made
 their purchases succeed.
 
-### 5.2 Top product categories
+### 5.2 Typical top product categories
 
 Second analysis task of this project: **Look for top categories of
 products so that you know what sells best.**
@@ -3270,7 +3213,7 @@ ggplot(color_df, aes(y = fct_reorder(product_color, total), x = total, group = 1
   theme(plot.title = element_text(size = 17))
 ```
 
-![](summer_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](summer_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 **2. product\_variation\_size\_id**
 
@@ -3287,8 +3230,8 @@ size_df <- df2 %>%
 # plot
 
 ggplot(size_df, aes(y = fct_reorder(product_variation_size_id, total), x = total, group = 1)) +
-  geom_point(size = 3, color = "green") +
-  geom_line(size = 1, color = "green") +
+  geom_point(size = 3, color = "yellow") +
+  geom_line(size = 1, color = "yellow") +
   theme_modern_rc() +
   labs(x = "Total Sold per Item Category",
        y = "Size Category",
@@ -3296,43 +3239,64 @@ ggplot(size_df, aes(y = fct_reorder(product_variation_size_id, total), x = total
   theme(plot.title = element_text(size = 17))
 ```
 
-![](summer_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](summer_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
-### 5.3
+### 5.3 The Effect of Rating on Sales
 
-Do bad products sell ? How about the relationship between the quality of
-a product (ratings) and its success ? Does the price factor into this ?
+The third analysis task: **Do bad products sell ? How about the
+relationship between the quality of a product (ratings) and its success
+? Does the price factor into this ?**
+
+Yes, the better the rating, the better the sales of the product. From
+following plot, I can see that as long as the product has a rating of
+above 3, it will sell.
+
+The price does not have obvious relationship with the rating and sales.
 
 ``` r
-cloth2
+ggplot(cloth2, aes(x = rating, y = units_sold, colour = price_class)) +
+  geom_point(size = 3, alpha = 0.4) +
+  theme_modern_rc() +
+  labs(x = "Product Rating (1 - 5)",
+       y = "Units Sold (Count)",
+       title = "Best Performing Rating Falls Between 3 - 5") +
+  theme(plot.title = element_text(vjust = 2)) +
+  facet_wrap(~price_class)
 ```
 
-    ## # A tibble: 1,457 x 29
-    ##    title_orig              price retail_price price_drop discount_per units_sold
-    ##    <fct>                   <dbl>        <dbl>      <dbl>        <dbl>      <dbl>
-    ##  1 2020 Summer Vintage Fl~ 16              14     -2              -14        100
-    ##  2 Women's Casual Summer ~  8              22     14               64      20000
-    ##  3 2020 New Arrival Women~  8              43     35               81        100
-    ##  4 Hot Summer Cool T Shir~  8               8      0                0       5000
-    ##  5 Women Summer Shorts La~  2.72            3      0.280            9        100
-    ##  6 Plus Size Summer Women~  3.92            9      5.08            56         10
-    ##  7 Women Fashion Loose La~  7               6     -1              -17      50000
-    ##  8 Women's Baggy Tunic Dr~ 12              11     -1               -9       1000
-    ##  9 Women's Summer Casual ~ 11              84     73               87        100
-    ## 10 Summer Women Plus Size~  5.78           22     16.2             74       5000
-    ## # ... with 1,447 more rows, and 23 more variables: uses_ad_boosts <fct>,
-    ## #   rating <dbl>, badges_count <dbl>, badge_local_product <dbl>,
-    ## #   badge_product_quality <dbl>, badge_fast_shipping <dbl>, tags <fct>,
-    ## #   product_color <fct>, product_variation_size_id <fct>,
-    ## #   product_variation_inventory <dbl>, shipping_option_name <fct>,
-    ## #   shipping_option_price <dbl>, shipping_is_express <fct>,
-    ## #   countries_shipped_to <dbl>, inventory_total <dbl>, ...
+![](summer_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
--   Do bad products sell ? How about the relationship between the
-    quality of a product (ratings) and its success ? Does the price
-    factor into this ?
+### 5.4 Logarithmically graphing the Fame
 
--   Do seller’s fame factor into top products ?
+The fourth analysis task of this project asked: **Do seller’s fame
+factor into top products?**
+
+Two options here, whether I should use “merchant\_rating\_count” and
+“merchant\_rating” for this analysis. The “merchant\_rating\_count” will
+indicate total number of rating, which would indicate how popular the
+seller is. On the other hand, “merchant\_rating” will only give the
+overall rating of the seller, and it won’t tell how many buyers are
+voting for the seller.
+
+Therefore, I will use “merchant\_rating\_count” to be an indication of
+“fame factor” as specified by the task of this section.
+
+nifty chart
+
+``` r
+df5 <- cloth2 %>% dplyr::select(units_sold, product_color, product_variation_size_id, 
+                                  merchant_rating_count, merchant_rating_count, merchant_rating)
+
+
+ggplot(df5, aes(x = log(merchant_rating_count), y = units_sold)) +
+  geom_point(colour = "orange") +
+  geom_smooth() +
+  theme_modern_rc()
+```
+
+    ## `geom_smooth()` using method = 'gam' and formula 'y ~ s(x, bs = "cs")'
+
+![](summer_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 -   Do the number of tags (making a product more discoverable) factor
     into the success of a product ?
