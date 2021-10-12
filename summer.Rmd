@@ -1,0 +1,95 @@
+---
+title: "Data Analysis plus model development for product success"
+author: "Kar Ng"
+date: "2021"
+output: 
+  github_document: 
+    toc: true
+    toc_depth: 4
+always_allow_html: yes
+
+---
+
+
+***
+
+
+
+***
+
+
+## 1 R Libraries
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(kableExtra)
+
+```
+
+
+## 2 Introduction
+
+This project will analyse a public dataset on *Kaggle* website, named "Sales of Summer clothes in E-commerce Wish". As the name suggests, this dataset will include information related to the sales of summer clothes on Wish. There are 43 columns of variables in the dataset including price, units_sold, rating, tags, colour, countries shipped to and etc.
+
+A series of tasks that this project will answer include:
+
+* How about trying to validate the established idea of human sensitiveness to price drops ?
+
+* You may look for top categories of products so that you know what sells best
+
+* Do bad products sell ? How about the relationship between the quality of a product (ratings) and its success ? Does the price factor into this ?
+
+* Do seller's fame factor into top products ?
+
+* Do the number of tags (making a product more discoverable) factor into the success of a product ?
+
+Two popular data analysis techniques will be applied - exploratory data analysis and machine learning. The machine learning technique is to build models and choose the best one to predict *how well a product is going to sell*.
+
+
+## 3 Data Preparation
+
+The dataset is downloaded from kaggle website, visit this [Link](https://www.kaggle.com/jmmvutu/summer-products-and-sales-in-ecommerce-wish/tasks?taskId=1617) and uploaded to R to complete the analysis. 
+
+### 3.1 Data Importation
+
+```{r}
+cloth <- read_csv("summer.csv")
+```
+
+
+```{r}
+sample_n(cloth, 10) %>% 
+  kbl() %>% 
+  kable_styling(bootstrap_options = c("border", "stripped"))
+
+```
+
+
+### 3.2 Data Description
+
+
+### 3.3 Data Exploration
+
+
+## 4 Data Cleaning
+
+### 4.1 Remove variables
+
+
+### 4.2 Text Mining
+
+### 4.3 Create Metrics
+
+
+
+## 5 Exploratory Data Analysis (EDA)
+
+
+## 6 Statistical Analysis
+
+
+## Reference
+
+
+https://www.kaggle.com/jmmvutu/summer-products-and-sales-in-ecommerce-wish
+
