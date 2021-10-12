@@ -16,8 +16,13 @@ Kar Ng
     -   [4.4 Typos in the factor
         variables](#44-typos-in-the-factor-variables)
     -   [4.5 Examining the Rating](#45-examining-the-rating)
+    -   [4.6 New Metric: price\_drop](#46-new-metric-price_drop)
+    -   [4.6 New Metric: discount\_per](#46-new-metric-discount_per)
 -   [5 Exploratory Data Analysis
     (EDA)](#5-exploratory-data-analysis-eda)
+    -   [5.1 Validated! Human sensitive to price
+        drops.](#51-validated-human-sensitive-to-price-drops)
+    -   [5.2 Top product categories](#52-top-product-categories)
 -   [6 Statistical Analysis](#6-statistical-analysis)
 -   [Reference](#reference)
 
@@ -32,7 +37,7 @@ library(tidyverse)
 library(kableExtra)
 library(skimr)
 library(lubridate)
-
+library(hrbrthemes)
 
 # Format setting
 
@@ -3001,7 +3006,270 @@ cloth2 <- cloth2 %>% dplyr::select(-rating_count, -rating_five_count, -rating_fo
                          -rating_three_count, -rating_two_count, -rating_one_count)
 ```
 
+### 4.6 New Metric: price\_drop
+
+The “price” in the dataset is the price that an item will be sold at,
+whereas “retail\_price” is a reference price or regular price and is
+generally higher than the “price” column. Both will be shown on the
+product listing page for marketing purposes.
+
+It will be interesting to see how is a product sold based on price
+dropped. This drop of prices will be calculated here and visualized in
+the next stage.
+
+``` r
+cloth2 <- cloth2 %>% 
+  mutate(price_drop = retail_price - price) %>% 
+  relocate(price_drop, .after = retail_price)
+```
+
+Basic statistics of this “price\_drop” column are:
+
+``` r
+summary(cloth2$price_drop)
+```
+
+    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    ##   -7.00   -1.00    0.17   15.06   18.00  244.00
+
+### 4.6 New Metric: discount\_per
+
+Based on the newly created “price\_drop”, a discount percentage
+“discount\_per” is synthesised to help to study the effect of price
+dropped on sales.
+
+``` r
+cloth2 <- cloth2 %>% 
+  mutate(discount_per = round(price_drop/retail_price*100), 2) %>% 
+  relocate(discount_per, .after = price_drop)
+```
+
+Basic statistics of this “discount\_per” column are:
+
+``` r
+summary(cloth2$discount_per)
+```
+
+    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    ##  -18.00  -12.00    4.00   25.56   72.00   97.00
+
+Why don’t we use price\_drop instead? Because produces are sold at
+different prices, the sample sizes of expensive products are different
+than the products at cheaper prices. Creating a discount percentage
+columne (discount\_per) will aid the scale down the value to make our
+observation easier (Hopefully).
+
 ## 5 Exploratory Data Analysis (EDA)
+
+This section will analyse the 5 main tasks listed in the introduction.
+
+### 5.1 Validated! Human sensitive to price drops.
+
+This section answers the first task of this project - **How about trying
+to validate the established idea of human sensitiveness to price drops
+?**
+
+It will be in relevant to the sales of a product in relation to the
+magnitude of it’s price drops. I will use discount in percentage (price
+drop/retail price \* 100) to represent price drops for each of these
+1457 items in the dataset.
+
+Following is the first graph, it appears that there is no obvious
+relation between discounts and unit sold.
+
+``` r
+install.packages("hrbrthemes")
+```
+
+    ## Warning: package 'hrbrthemes' is in use and will not be installed
+
+``` r
+library(hrbrthemes)
+
+ggplot(cloth2, aes(x = discount_per, y = units_sold)) +
+  geom_jitter(size = 4, alpha = 0.2, colour = "green") +
+  labs(x = "Discount (%)",
+       y = "Unit Sold (Quantity)",
+       title = "Unit Sold versus Discounts ($)") +
+  theme_modern_rc() +
+  theme(plot.title = element_text(size = 16, face = "bold")) +
+  scale_y_continuous(labels = function(x)paste0((x/1000), "k"))
+```
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font family not
+    ## found in Windows font database
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font family not
+    ## found in Windows font database
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font family not
+    ## found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## font family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+![](summer_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+
+However, following bar chart shows that
+
+``` r
+df1 <- cloth2 %>% 
+  select(discount_per, units_sold) %>% 
+  mutate(class = case_when(discount_per < 0 ~ "0%",
+                           discount_per > 0 & discount_per < 25 ~ "0-25%",
+                           discount_per > 25 & discount_per < 50 ~ "25-50%",
+                           discount_per > 50 & discount_per < 75 ~ "50-75%",
+                           TRUE ~ "75-100%"),
+         class = factor(class, levels = c("0%", "0-25%", "25-50%", "50-75%", "75-100%"))) %>% 
+  group_by(class) %>% 
+  summarise(total = sum(units_sold)) 
+
+
+
+ggplot(df1, aes(x = class, y = total, fill = class)) +
+  geom_bar(stat = "identity", colour = "black") +
+  geom_label(aes(label = prettyNum(total, big.mark = ",")), vjust = -1, fill = "grey") +
+  labs(x = "Discounts",
+       y = "Total Sold (Count)",
+       title = "More Items Sold at Higher Discount Rate (%)") +
+  scale_y_continuous(labels = function(x)paste0((x/1000000), " Mil"),
+                     lim = c(0, 3000000)) +
+  theme_modern_rc() +
+  theme(legend.position = "none",
+        plot.title = element_text(face = "bold"),
+        axis.title.y = element_text(margin = margin(0, 10, 0, 0)),
+        axis.title.x = element_text(margin = margin(10, 0, 0, 0)))
+```
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font family not
+    ## found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## font family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+![](summer_files/figure-gfm/unnamed-chunk-24-1.png)<!-- --> Please be
+aware. This result shows a tend but is not a well-designed proper
+experiment. It is a trend based on collected observation. However, it do
+show a trend that the higher the discount rate, the more the total
+number of items sold. It may help to conclude that human is sensitive
+towards price.
+
+To explain why discount rate at “0%” has the highest items sold, it is
+because that human sensitivity to price drops is a complex mechanism.
+For examples, there are much more items that are sold at 0% have their
+prices already much cheaper than the discounted items, regardless of
+price-drop magnitude. Though these items are having far cheap prices but
+also having a value that is enough to build trust from consumer and made
+their purchases succeed.
+
+### 5.2 Top product categories
+
+Second analysis task of this project: **Look for top categories of
+products so that you know what sells best.**
+
+Identify that following variables can help to answer this task.
+
+-   product\_color  
+-   product\_variation\_size\_id  
+-   shipping\_option\_name
+
+Setting up data frame with relevant variables.
+
+``` r
+df2 <- cloth2 %>% dplyr::select(units_sold, product_color, product_variation_size_id, shipping_option_name)
+
+color_df <- df2 %>% 
+  group_by(product_color) %>% 
+  summarise(total = sum(units_sold))
+```
+
+``` r
+ggplot(color_df, aes(y = fct_reorder(product_color, total), x = total, group = 1)) +
+  geom_point(size = 3) +
+  geom_line(size = 1) +
+  theme_modern_rc() +
+  labs(x = "Total Sold per Item Category",
+       y = "Colour Category",
+       title = "Top 5 Best-selling colours are Black, White, Grey, Purple, and Blue") +
+  theme(plot.title = element_text(size = 17))
+```
+
+![](summer_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+
+-   Do bad products sell ? How about the relationship between the
+    quality of a product (ratings) and its success ? Does the price
+    factor into this ?
+
+-   Do seller’s fame factor into top products ?
+
+-   Do the number of tags (making a product more discoverable) factor
+    into the success of a product ?
 
 ## 6 Statistical Analysis
 
