@@ -23,6 +23,13 @@ always_allow_html: yes
 ```{r, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(kableExtra)
+library(skimr)
+library(lubridate)
+
+
+# Format setting
+
+options(scipen = 999)
 
 ```
 
@@ -57,32 +64,367 @@ cloth <- read_csv("summer.csv")
 ```
 
 
+### 3.2 Data Description
+
+
 ```{r}
-sample_n(cloth, 10) %>% 
-  kbl() %>% 
-  kable_styling(bootstrap_options = c("border", "stripped"))
+
+Variable <- names(cloth)
+
+Description <- c("Title for localized for european countries. May be the same as title_orig if the seller did not offer a translation.", 
+                 "Original english title of the product.",
+                 "Price you would pay to get the product.",
+                 "Reference price for similar articles on the market, or in other stores/places. Used by the seller to indicate a regular value or the price before discount.",
+                 "Currency of the prices.",
+                 "Number of units sold. Lower bound approximation by steps",
+                 "Whether the seller paid to boost his product within the platform (highlighting, better placement or whatever)",
+                 "Mean product rating.",
+                 "Total number of ratings of the product",
+                 "Number of 5-star ratings",
+                 "Number of 4-star ratings",
+                 "Number of 3-star ratings",
+                 "Number of 2-star ratings",                 
+                 "Number of 1-star ratings",
+                 "Number of badges the product or the seller have",
+                 "A badge that denotes the product is a local product. Conditions may vary (being produced locally, or something else). Some people may prefer buying local products rather than. 1 means Yes, has the badge",
+                 "Badge awarded when many buyers consistently gave good evaluations. 1 means Yes, has the badge",
+                 "Badge awarded when this product's order is consistently shipped rapidly",
+                 "tags set by the seller",
+                 "Product's main color",
+                 "One of the available size variation for this product",
+                 "Inventory the seller has. Max allowed quantity is 50",
+                 "shipping_option_name",
+                 "shipping price",
+                 "whether the shipping is express or not. 1 for True",
+                 "Number of countries this product is shipped to. Sellers may choose to limit where they ship a product to",
+                 "Total inventory for all the product's variations (size/color variations for instance)",
+                 "Whether there was an urgency banner with an urgency",
+                 "A text banner that appear over some products in the search results.",
+                 "origin_country",
+                 "Merchant's displayed name (show in the UI as the seller's shop name)",
+                 "Merchant's canonical name. A name not shown publicly. Used by the website under the hood as a canonical name. Easier to process since all lowercase without white space",
+                 "The subtitle text as shown on a seller's info section to the user. (raw, not preprocessed). The website shows this to the user to give an overview of the seller's stats to the user. Mostly consists of `% <positive_feedbacks> (<rating_count> reviews)` written in french",
+                 "Number of ratings of this seller",
+                 "merchant's rating",
+                 "merchant unique id",
+                 "Convenience boolean that says whether there is a `merchant_profile_picture` url",
+                 "Custom profile picture of the seller (if the seller has one). Empty otherwise",
+                 "url to the product page. You may need to login to access it",
+                 "Product_picture",
+                 "product identifier. You can use this key to remove duplicate entries if you're not interested in studying them.",
+                 "the search term used in the search bar of the website to get these search results.",
+                 "meta: for info only.")
+
+
+data.frame(Variable, Description) %>% 
+  kbl(caption = "Adapated from the Kaggle Website.") %>% 
+  kable_styling(bootstrap_options = c("striped", "bordered"))
+  
+  
+
+```
+
+### 3.3 Data Exploration
+
+The dataset has 1573 rows of observation and 43 columns of variables. Variables are currently categorised into 2 types, which are character and numeric. 
+
+
+```{r}
+skim_without_charts(cloth)
+```
+
+Looking at the "complete_rate", I see that *urgency_text*, *merchant_profile_picture*, and *has_urgency_banner* have too many missing data with a very low complete rate of less than 30%. They will be removed during data cleaning.   
+
+Here provides another way of looking at missing values in the dataset. 
+
+```{r}
+colSums(is.na(cloth))
+
+```
+
+Looking at the dataset horizontally with the listing of some values within each variables and their classified type in R. This will helps to see which variables are irrelevant to this project and should be removed. 
+
+```{r}
+glimpse(cloth)
+
+```
+
+I identify that following variables can be removed for various reasons. 
+
+* *title*: Redundant. We have already the translated title in the second column.    
+* *currency_buyer*: Only one currency "EUR", it doesn't provide analysis insight.    
+* *merchant_profile_picture*: Contain too many missing values, complete rate was only 14%. This column is also redundant. relevant column indicating the existence of profile picture already.        
+* *has_urgency_banner*, complete rate was only 30%.     
+* *urgency_text*: Contain too many missing values, complete rate was only 30%.       
+* *merchant_id*: Redundant. I am not interested in individual merchant, it is an overall analysis.       
+* *product_url*: I do not need this column for this analysis.    
+* *product_picture*: I do not need this column for this analysis.   
+* *product_id*: I do not need this column for this analysis.   
+* *theme*: Only "summer" in the entire dataset, this column wouldn't contribute much to the analysis of this project.      
+
+```{r}
+
+c <- cloth %>% 
+  mutate(theme = as.factor(theme))
+
+levels(c$theme)
+
+```
+* *crawl_month*: Only "2020-08-01" in the entire dataset, this column wouldn't contribute much to the analysis of this project.  
+
+```{r}
+
+c <- cloth %>% 
+  mutate(crawl_month = ym(crawl_month))
+
+summary(c$crawl_month)
+
+```
+
+## 4 Data Cleaning
+
+Major tasks in this section:
+
+* Remove unrelated variables  
+* Manage missing values  
+* Convert character and some numerical variables into factor 
+
+
+### 4.1 Remove variables
+
+This section removes variables that have been previously identified to be redundant or irrelevant to this project.  
+
+* *title*     
+* *currency_buyer*  
+* *merchant_profile_picture*  
+* *has_urgency_banner*     
+* *urgency_text*        
+* *merchant_id*      
+* *product_url*     
+* *product_picture*   
+* *product_id*    
+* *theme*  
+* *crawl_month*
+
+```{r}
+
+# Preserving the original data "cloth", and create a new variable "cloth2" 
+
+cloth2 <- cloth %>% 
+  dplyr::select(-title, -currency_buyer, -merchant_profile_picture, -has_urgency_banner, 
+                -urgency_text, -merchant_id, -product_url, -product_picture, -product_id, 
+                -theme, -crawl_month)
+
+
+```
+
+I will assess the remaining variables again in later stage and would remove them if I found that they don't provide value to this analysis.  
+
+
+### 4.2 Remove missing values
+
+This section removes 116 rows of data, which is 7.37% of the overall dataset. The dataset drops from 1573 rows of data to 1457. 
+
+```{r}
+cloth2 <- na.omit(cloth2)
+
+(count(cloth) - count(cloth2))/count(cloth) * 100
+
+
+```
+
+There are ways to manage missing values such as imputation using mean, median, or machine learning models. However, I remove the missing values for simplicity of this project. Only 7.37% of data is removed, and I still have 92.63% (1457 rows) of data for this analysis. 
+
+Why missing values need to be managed? It would affect the result of any metrics, for example, the average, as well as affecting the performance of machine learning models. 
+
+
+
+### 4.3 Factor conversion
+
+In order for effective analysis, convert character variables into factor is essential. Additionally, some numeric variables will be converted into factor type such as binary vector or vector that uses numbers for grouping purposes. 
+
+Converting data into factor helps (1) the overall R processing speed, (2) initial the role of these numbers in data categorisation, (3) Enable some functions of R that require vectors to be in factor format. 
+
+```{r}
+
+cloth2 <- cloth2 %>% 
+  mutate_if(is.character, as.factor) %>% 
+  mutate(uses_ad_boosts = as.factor(uses_ad_boosts),       # A binary data for yes or not 
+         shipping_is_express = as.factor(shipping_is_express),  # A binary data for yes or not 
+         merchant_has_profile_picture = as.factor(merchant_has_profile_picture)  # A binary data for yes or not 
+         )
+
+
 
 ```
 
 
-### 3.2 Data Description
+### 4.4 Typos in the factor variables
+
+I will check typos in the factor variables (character type) that are useful for data categorisation during analysis. An important criteria I will check on is the number of repetitation within these factors. The factor with high repetition of levels will be assessed in this section. 
+
+I have identified them, which are:
+
+* product_color    
+* product_variation_size_id  
+* origin_country  
+
+**1. Product_color**
+
+A lot of typos need to be cleaned, which are:
+
+* *army green* and *Army green* into *armygreen*
+* *Black* into *black*
+* *Blue* into *blue*
+* *gray* into *grey*
+* *light green* into *lightgreen*
+* *navy blue* into *navyblue*
+* *Pink* into *pink*
+* *RED* into *red*
+* *Rose red* into *rosered*
+* *White* into *white*
+* *wine red* into *winered*
+
+```{r}
+summary(cloth2$product_color)
+
+```
+
+```{r}
+# Rectification
+
+cloth2 <- cloth2 %>% 
+  mutate(product_color = as.character(product_color),
+         product_color = case_when(product_color == "army green" ~ "armygreen",
+                                   product_color == "Army green" ~ "armygreen",
+                                   product_color == "Black" ~ "black",
+                                   product_color == "Blue" ~ "blue",
+                                   product_color == "gray" ~ "grey",
+                                   product_color == "light green" ~ "lightgreen",
+                                   product_color == "*navy blue" ~ "navyblue",
+                                   product_color == "Pink" ~ "pink",
+                                   product_color == "RED" ~ "red",
+                                   product_color == "Rose red" ~ "rosered",
+                                   product_color == "White" ~ "white",
+                                   product_color == "wine red" ~ "winered",
+                                   TRUE ~ product_color),
+         product_color = as.factor(product_color))
 
 
-### 3.3 Data Exploration
+```
 
 
-## 4 Data Cleaning
+**2. product_variation_size_id**
 
-### 4.1 Remove variables
+The data is too messy in this column. I am doing some buik computation to aid the cleaning a little. Trim leading and trailing white space, remove punctuation, and set all levels to Upper case. 
+
+```{r}
+cloth2 <- cloth2 %>% 
+  mutate(product_variation_size_id = str_to_upper(product_variation_size_id),
+         product_variation_size_id = str_replace_all(product_variation_size_id, "[[:punct:]]", " "),
+         product_variation_size_id = trimws(product_variation_size_id),
+         product_variation_size_id = as.factor(product_variation_size_id))
+
+summary(cloth2$product_variation_size_id) %>% kbl()
+  
+```
+
+Grouping some of the identifiable size categories. 
+
+```{r}
+
+cloth2 <- cloth2 %>% 
+  mutate(product_variation_size_id = as.character(product_variation_size_id),
+         product_variation_size_id = case_when(product_variation_size_id == "2XL" ~ "XXL", 
+                                               product_variation_size_id == "3XL" ~ "XXXL", 
+                                               product_variation_size_id == "4XL" ~ "XXXXL", 
+                                               product_variation_size_id == "5XL" ~ "XXXXXL", 
+                                               product_variation_size_id == "SIZE S" ~ "S", 
+                                               product_variation_size_id == "SIZE XXS" ~ "XXS", 
+                                               product_variation_size_id == "SIZE 4XL" ~ "XXXL", 
+                                               product_variation_size_id == "SIZE 5XL" ~ "XXXXXL", 
+                                               product_variation_size_id == "SIZE M" ~ "M", 
+                                               product_variation_size_id == "SIZE S" ~ "S", 
+                                               product_variation_size_id == "SIZE XS" ~ "XS", 
+                                               product_variation_size_id == "SIZE XXS" ~ "XXS", 
+                                               product_variation_size_id == "SIZE4XL" ~ "XXXXL", 
+                                               product_variation_size_id == "SIZEL" ~ "L",
+                                               product_variation_size_id == "SIZEL" ~ "L",
+                                               TRUE ~ product_variation_size_id),
+         product_variation_size_id = as.factor(product_variation_size_id))
+
+```
 
 
-### 4.2 Text Mining
 
-### 4.3 Create Metrics
+**3. origin_country**
+
+Nothing to rectify in this column.
+
+```{r}
+
+summary(cloth2$origin_country)
+
+```
+
+
+### 4.5 Examining the Rating
+
+There are 5 columns for different counts of rating and a "rating_count" representing the total number of rates received. In the aim of analysis of this project, I do not need these columns because I only need the "rating" column which indicates the overall rating.
+
+```{r}
+rate <- cloth2 %>% dplyr::select(rating, rating_count, rating_five_count, rating_four_count, rating_three_count,
+                                 rating_two_count, rating_one_count)
+
+rate
+
+```
+
+Therefore, I will remove these columns.
+
+```{r}
+cloth2 <- cloth2 %>% dplyr::select(-rating_count, -rating_five_count, -rating_four_count, 
+                         -rating_three_count, -rating_two_count, -rating_one_count)
+
+```
 
 
 
 ## 5 Exploratory Data Analysis (EDA)
+
+This section will analyse the 5 main tasks listed in the introduction.
+
+### 5.1
+
+**How about trying to validate the established idea of human sensitiveness to price drops ?**
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+* You may look for top categories of products so that you know what sells best
+
+* Do bad products sell ? How about the relationship between the quality of a product (ratings) and its success ? Does the price factor into this ?
+
+* Do seller's fame factor into top products ?
+
+* Do the number of tags (making a product more discoverable) factor into the success of a product ?
+
+
+
+
 
 
 ## 6 Statistical Analysis
