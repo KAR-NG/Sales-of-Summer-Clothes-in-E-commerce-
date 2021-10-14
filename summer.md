@@ -19,17 +19,26 @@ Kar Ng
     -   [4.6 New Metric: price\_drop](#46-new-metric-price_drop)
     -   [4.6 New Metric: discount\_per](#46-new-metric-discount_per)
     -   [4.7 New Metric: price\_class](#47-new-metric-price_class)
--   [5 Exploratory Data Analysis
-    (EDA)](#5-exploratory-data-analysis-eda)
+-   [5 Visualisation](#5-visualisation)
     -   [5.1 Validated! Human sensitive to price
-        drops.](#51-validated-human-sensitive-to-price-drops)
+        drops](#51-validated-human-sensitive-to-price-drops)
     -   [5.2 Typical top product
         categories](#52-typical-top-product-categories)
     -   [5.3 The Effect of Rating on
         Sales](#53-the-effect-of-rating-on-sales)
     -   [5.4 Logarithmically graphing the
         Fame](#54-logarithmically-graphing-the-fame)
--   [6 Statistical Analysis](#6-statistical-analysis)
+    -   [5.5 Tags (Text) Analysis](#55-tags-text-analysis)
+-   [6 Staitistcal Analysis](#6-staitistcal-analysis)
+    -   [6.1 Feature Selection](#61-feature-selection)
+    -   [6.2 EDA](#62-eda)
+        -   [6.2.1 Histogram](#621-histogram)
+        -   [6.2.2 Boxplot](#622-boxplot)
+        -   [6.3.3 Relationship Curve](#633-relationship-curve)
+        -   [6.3.3 Correlogram](#633-correlogram)
+    -   [6.3 Inferential Model](#63-inferential-model)
+-   [7 Predictive Aanalysis](#7-predictive-aanalysis)
+-   [Legality](#legality)
 -   [Reference](#reference)
 
 ------------------------------------------------------------------------
@@ -45,6 +54,11 @@ library(skimr)
 library(lubridate)
 library(hrbrthemes)
 library(hrbrthemes)
+library(tidytext)
+library(ggExtra)
+library(patchwork)
+library(tidytext)
+library(corrplot)
 
 # Format setting
 
@@ -3095,11 +3109,11 @@ levels(cloth2$price_class)
 
     ## [1] "EUR<10"   "EUR10-20" "EUR20-30" "EUR40-50"
 
-## 5 Exploratory Data Analysis (EDA)
+## 5 Visualisation
 
 This section will analyse the 5 main tasks listed in the introduction.
 
-### 5.1 Validated! Human sensitive to price drops.
+### 5.1 Validated! Human sensitive to price drops
 
 This section answers the first task of this project - **How about trying
 to validate the established idea of human sensitiveness to price drops
@@ -3114,7 +3128,7 @@ Following is the first graph, it appears that there is no obvious
 relation between discounts and unit sold.
 
 ``` r
-ggplot(cloth2, aes(x = discount_per, y = units_sold)) +
+p1 <- ggplot(cloth2, aes(x = discount_per, y = units_sold)) +
   geom_jitter(size = 4, alpha = 0.2, colour = "green") +
   labs(x = "Discount (%)",
        y = "Unit Sold (Quantity)",
@@ -3122,11 +3136,17 @@ ggplot(cloth2, aes(x = discount_per, y = units_sold)) +
   theme_modern_rc() +
   theme(plot.title = element_text(size = 16, face = "bold")) +
   scale_y_continuous(labels = function(x)paste0((x/1000), "k"))
+
+
+p1
 ```
 
 ![](summer_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
-However, following bar chart shows that
+However, following bar chart shows that in term of the total number of
+products sold from different discount classes, it is definitely that a
+discount rate between 75% to near 100% will outcompete other discount
+classes.
 
 ``` r
 df1 <- cloth2 %>% 
@@ -3142,7 +3162,7 @@ df1 <- cloth2 %>%
 
 
 
-ggplot(df1, aes(x = class, y = total, fill = class)) +
+p2 <- ggplot(df1, aes(x = class, y = total, fill = class)) +
   geom_bar(stat = "identity", colour = "black") +
   geom_label(aes(label = prettyNum(total, big.mark = ",")), vjust = -1, fill = "grey") +
   labs(x = "Discounts",
@@ -3155,14 +3175,17 @@ ggplot(df1, aes(x = class, y = total, fill = class)) +
         plot.title = element_text(face = "bold"),
         axis.title.y = element_text(margin = margin(0, 10, 0, 0)),
         axis.title.x = element_text(margin = margin(10, 0, 0, 0)))
+
+p2
 ```
 
-![](summer_files/figure-gfm/unnamed-chunk-26-1.png)<!-- --> Please be
-aware. This result shows a tend but is not a well-designed proper
-experiment. It is a trend based on collected observation. However, it do
-show a trend that the higher the discount rate, the more the total
-number of items sold. It may help to conclude that human is sensitive
-towards price.
+![](summer_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+
+Please be aware. This result shows a tend but is not a well-designed
+proper experiment. It is a trend based on collected observation.
+However, it do show a trend that the higher the discount rate, the more
+the total number of items sold. It may help to conclude that human is
+sensitive towards price.
 
 To explain why discount rate at “0%” has the highest items sold, it is
 because that human sensitivity to price drops is a complex mechanism.
@@ -3203,14 +3226,18 @@ color_df <- df2 %>%
 
 # plot
 
-ggplot(color_df, aes(y = fct_reorder(product_color, total), x = total, group = 1)) +
+p3 <- ggplot(color_df, aes(y = fct_reorder(product_color, total), x = total, group = 1)) +
   geom_point(size = 3) +
   geom_line(size = 1) +
   theme_modern_rc() +
   labs(x = "Total Sold per Item Category",
        y = "Colour Category",
        title = "Top 5 Best-Selling Colours are Black, White, Grey, Purple, and Blue") +
-  theme(plot.title = element_text(size = 17))
+  theme(plot.title = element_text(size = 17)) +
+  scale_x_continuous(labels = function(x)(prettyNum(x, big.mark = ",")))
+
+
+p3 
 ```
 
 ![](summer_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
@@ -3229,14 +3256,17 @@ size_df <- df2 %>%
 
 # plot
 
-ggplot(size_df, aes(y = fct_reorder(product_variation_size_id, total), x = total, group = 1)) +
+p4 <- ggplot(size_df, aes(y = fct_reorder(product_variation_size_id, total), x = total, group = 1)) +
   geom_point(size = 3, color = "yellow") +
   geom_line(size = 1, color = "yellow") +
   theme_modern_rc() +
   labs(x = "Total Sold per Item Category",
        y = "Size Category",
        title = "Top 5 Best-Selling Sizes are S, M, XS, L and XXS") +
-  theme(plot.title = element_text(size = 17))
+  theme(plot.title = element_text(size = 17)) +
+  scale_x_continuous(labels = function(x)(prettyNum(x, big.mark = ",")))
+
+p4
 ```
 
 ![](summer_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
@@ -3254,14 +3284,18 @@ above 3, it will sell.
 The price does not have obvious relationship with the rating and sales.
 
 ``` r
-ggplot(cloth2, aes(x = rating, y = units_sold, colour = price_class)) +
+p5 <- ggplot(cloth2, aes(x = rating, y = units_sold, colour = price_class)) +
   geom_point(size = 3, alpha = 0.4) +
   theme_modern_rc() +
   labs(x = "Product Rating (1 - 5)",
        y = "Units Sold (Count)",
        title = "Best Performing Rating Falls Between 3 - 5") +
   theme(plot.title = element_text(vjust = 2)) +
-  facet_wrap(~price_class)
+  facet_wrap(~price_class) +
+  scale_y_continuous(labels = function(x)(prettyNum(x, big.mark = ",")))
+
+
+p5
 ```
 
 ![](summer_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
@@ -3271,37 +3305,3037 @@ ggplot(cloth2, aes(x = rating, y = units_sold, colour = price_class)) +
 The fourth analysis task of this project asked: **Do seller’s fame
 factor into top products?**
 
-Two options here, whether I should use “merchant\_rating\_count” and
-“merchant\_rating” for this analysis. The “merchant\_rating\_count” will
-indicate total number of rating, which would indicate how popular the
-seller is. On the other hand, “merchant\_rating” will only give the
-overall rating of the seller, and it won’t tell how many buyers are
-voting for the seller.
+There are two options here, whether I should use
+“merchant\_rating\_count” or “merchant\_rating” for this analysis. The
+“merchant\_rating\_count” indicates total number of rating, which would
+indirectly tell how popular a seller is. On the other hand,
+“merchant\_rating” will only give the overall rating of a seller, and it
+won’t tell how many buyers are voting for the seller.
 
-Therefore, I will use “merchant\_rating\_count” to be an indication of
-“fame factor” as specified by the task of this section.
-
-nifty chart
+Therefore, I will use “merchant\_rating\_count” to be a better
+indication of “fame factor” specified by the task.
 
 ``` r
+library(patchwork)
+
+
 df5 <- cloth2 %>% dplyr::select(units_sold, product_color, product_variation_size_id, 
                                   merchant_rating_count, merchant_rating_count, merchant_rating)
 
 
-ggplot(df5, aes(x = log(merchant_rating_count), y = units_sold)) +
-  geom_point(colour = "orange") +
-  geom_smooth() +
-  theme_modern_rc()
+p1 <- ggplot(df5, aes(x = log(merchant_rating_count), y = units_sold)) +
+  geom_point(colour = "orange", shape = 21, size = 4) +
+  geom_smooth(colour = "white") +
+  theme_modern_rc() +
+  labs(x = "log(Merchant Rating Count)",
+       y = "Unit Sold (Count)",
+       title = "logarithmic") 
+  
+
+df5 <- cloth2 %>% dplyr::select(units_sold, product_color, product_variation_size_id, 
+                                  merchant_rating_count, merchant_rating_count, merchant_rating)
+
+
+p2 <- ggplot(df5, aes(x = merchant_rating_count, y = units_sold)) +
+  geom_point(colour = "pink", shape = 21, size = 4) +
+  geom_smooth(colour = "white") +
+  theme_modern_rc() +
+  labs(x = "Merchant Rating Count",
+       y = "Unit Sold (Count)",
+       title = "Arithmetic") +
+  scale_x_continuous(labels = function(x)(prettyNum(x, big.mark = ",")))
+
+mypatch <- p2 + p1 & theme_modern_rc() 
+
+mypatch + 
+  plot_annotation(title = "Gentle Relationship between Fame and Sales") +
+  theme(text = element_text(size = 40))
+```
+
+![](summer_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+
+*Insights*
+
+-   The fame of a merchant is important but not critical.  
+-   Sales will increase with the popularity of a merchant.  
+-   However, the relationship is not absolute proved by the evidence of
+    arithmetic graph.
+
+### 5.5 Tags (Text) Analysis
+
+The fifth question: *Do the number of tags (making a product more
+discoverable) factor into the success of a product ?*
+
+``` r
+# df 
+
+df5 <- cloth2 %>% 
+  dplyr::select(merchant_name, price_class, price, units_sold, tags) %>% 
+  mutate(tags = as.character(tags))
+
+seller_tags <- df5 %>% 
+  unnest_tokens(input = tags, output = word) %>%        # Tokenise tags 
+  group_by(merchant_name) %>% 
+  summarise(tags_count = n()) %>% 
+  arrange(desc(tags_count))
+
+# join tables
+
+df5.2 <- df5 %>% 
+  left_join(seller_tags, by = "merchant_name")
+
+# plot
+
+ggplot(df5.2, aes(x = tags_count, y = units_sold)) +
+  geom_hex(bins = 40, colour = "grey") +
+  theme_modern_rc() +
+  theme(legend.position = "right",
+        plot.title = element_text(face = "bold", size = 14, vjust = 2)) +
+  labs(title = "Tags are Required But No Direct Impacts On Product Success",
+       x = "Number of Tags",
+       y = "Units Sold") +
+  scale_y_continuous(labels = function(x)(prettyNum(x, big.mark = ","))) 
+```
+
+![](summer_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+
+## 6 Staitistcal Analysis
+
+This section will start to evaluate the statistical relationship between
+*how well a product is sold* with all other relevant variables. The
+responding variable will be “units\_sold”.
+
+### 6.1 Feature Selection
+
+**Primary Addition**
+
+The number of tags in relation to the number of each product sold will
+be very interesting to include. This value can be attracted from the
+“tags” column that has a massive amount of text describing relevant
+tags. This extraction has been done in section 5.5. Here, I will just
+add the extracted column into the current dataset.
+
+``` r
+cloth2 <- cloth2 %>% 
+  left_join(seller_tags, by = "merchant_name")
+```
+
+**Primary Removing**
+
+This section will remove variables that is irrelevant to this analysis
+based on my domain knowledge. I will based on the characteristics of a
+feature, for examples (1) if there are too many missing values in that
+column (I have done it during data cleaning), (2) The data in the column
+do not help in categorising the data such as having non-repeated unique
+values in the entire column, (3) The column is basically irrelevant to
+the predictive objective.
+
+Variables I am removing include:
+
+-   title\_orig  
+-   tags  
+-   merchant\_title  
+-   merchant\_name  
+-   merchant\_info\_subtitle  
+-   the accidentally induced column - “2”
+
+``` r
+cloth3 <- cloth2 %>% dplyr::select(-title_orig, -tags, -merchant_title, -merchant_name, -merchant_info_subtitle, -'2')
+```
+
+### 6.2 EDA
+
+#### 6.2.1 Histogram
+
+Following histogram looks for the trends of all numerical variables.
+
+``` r
+# df
+
+df.his <- cloth3 %>% 
+  gather(key = "key", value = "value") %>% 
+  mutate(value = as.numeric(value))
+
+# plot
+
+ggplot(df.his, aes(x = value, fill = key)) + 
+  geom_histogram(colour = "black") +
+  facet_wrap(~key, scale = "free") +
+  theme_modern_rc() +
+  theme(legend.position = "none",
+        strip.text = element_text(colour = "white", size = 10)) 
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](summer_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+
+*Insights*
+
+-   Identify that *badge\_fast\_shipping*, *badge\_local\_product*,
+    *badge\_product\_quality*, *merchant\_has\_profile\_picture*,
+    *uses\_ad\_boosts*, and *shipping\_is\_express* are binary variable
+    and should be converted to factor.
+
+``` r
+cloth3 <- cloth3 %>% 
+  mutate(badge_fast_shipping = as.factor(badge_fast_shipping),
+         badge_local_product = as.factor(badge_local_product),
+         badge_product_quality = as.factor(badge_product_quality),
+         merchant_has_profile_picture = as.factor(merchant_has_profile_picture),
+         uses_ad_boosts = as.factor(uses_ad_boosts),
+         shipping_is_express = as.factor(shipping_is_express))
+```
+
+-   *inventory\_total* is a numerical variable with only single value of
+    50, information gaining from this variable in relation to the number
+    of product soil will be limited. Therefore, this variable will be
+    removed.
+
+``` r
+cloth3 <- cloth3 %>% dplyr::select(-inventory_total)
+```
+
+-   Most variables have skewed distribution, variables that has high
+    potential predictive power (Gaussian distributed) are
+    country\_shiped to, merchant rating, price, rating, and perhaps
+    tags\_count.
+
+-   A non-parametric machine learning algorithm should applied for this
+    dataset.
+
+Following histogram looks for the trends of all categorical variables.
+
+``` r
+his_cat <- cloth3 %>% 
+  dplyr::select(origin_country, price_class, product_color, shipping_option_name) 
+
+his_cat <- his_cat %>% 
+  gather(key = "key", value = "value") %>% 
+  group_by(key, value) 
+  
+
+ggplot(his_cat, aes(y = reorder(value, table(value)[value]), colour = key)) +
+  geom_bar(fill = "black") +
+  facet_wrap(~key, scale = "free", ncol = 1, nrow = 4) +
+  theme_modern_rc() +
+  theme(legend.position = "none",
+        strip.text = element_text(colour = "white"))
+```
+
+![](summer_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
+
+From above graph, we are able to see which categorical level are the
+dominant ones. Product color might be harder to see and so I provide an
+alternative zoomed version before with count higher than 50.
+
+``` r
+his_cat_color <- his_cat %>% 
+  filter(key == "product_color") %>% 
+  group_by(value) %>% 
+  summarise(count = n()) %>% 
+  filter(count > 20)
+  
+ggplot(his_cat_color, aes(y = fct_reorder(value, count), x = count, colour = value)) +
+  geom_bar(fill = "black", stat = "identity") +
+  theme_modern_rc() +
+  theme(legend.position = "none") +
+  labs(x = "Count",
+       y = "Product Colour",
+       title = "Zoomed in to Dominant Product Colour (Count > 50)")
+```
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## font family not found in Windows font database
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
+    ## family not found in Windows font database
+
+![](summer_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
+
+#### 6.2.2 Boxplot
+
+Applying boxplot to visualise the existence of outliers and how are data
+distributed in the form of box plot in each feature.
+
+``` r
+# df
+
+df.box <- cloth3 %>% 
+  select(is.numeric) %>% 
+  gather(key = "key", value = "value") %>% 
+  mutate(value = as.numeric(value))
+
+# plot
+
+ggplot(df.box, aes(x = value, fill = key)) +
+  geom_boxplot(colour = "white") +
+  facet_wrap(~key, scale = "free", ncol = 5, nrow = 3) +
+  theme_modern_rc() +
+  theme(legend.position = "none",
+        strip.text = element_text(size = 12, colour = "white"))
+```
+
+![](summer_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
+
+There are many outliers in each features. It may affect the assumption
+of regression models and a non-parametric machine learning model that
+immune to outlier should be applied.
+
+#### 6.3.3 Relationship Curve
+
+-   Relationship between
+
+``` r
+df_rela <- cloth3 %>% 
+  select(is.numeric) %>% 
+  gather(key = "key", value = "value", -units_sold) 
+
+ 
+ggplot(df_rela, aes(x = value, y = units_sold, colour = key)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~key, scales = "free") +
+  theme_bw() +
+  theme(legend.position = "none",
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5, vjust = 2),
+        strip.text = element_text(size = 10)) +
+  geom_smooth(se = F) +
+  labs(x = "Variables",
+       y = "Units Sold",
+       title = "Relationship between Numeric Predictors with Units Sold")
 ```
 
     ## `geom_smooth()` using method = 'gam' and formula 'y ~ s(x, bs = "cs")'
 
-![](summer_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+    ## Warning: Computation failed in `stat_smooth()`:
+    ## x has insufficient unique values to support 10 knots: reduce k.
 
--   Do the number of tags (making a product more discoverable) factor
-    into the success of a product ?
+    ## Warning: Computation failed in `stat_smooth()`:
+    ## x has insufficient unique values to support 10 knots: reduce k.
 
-## 6 Statistical Analysis
+![](summer_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
+
+The relationship between each predictors with the “units sold” (It can
+be understood as how well a product is sold) is complex. It is a rare
+situation where graphical transformation of data doesn’t help much. I
+will apply inferential model later to help interpretation.
+
+#### 6.3.3 Correlogram
+
+This section is to check multicollinearity between numerical predictors.
+As a rule of thumb, the pair of predictors with correlation above 0.8
+should have one removed among the both to avoid multicollinearity
+problem. If it is not done, the standard errors of coefficients
+estimates during regression analysis will be inflated, and may affect
+the accuracy of respective P-values. I will also apply VIF to support
+the decisions made in this correlogram.
+
+**Insights:**
+
+-   “Shipping\_option\_price” and “price” has correlation higher than
+    0.80  
+-   “retail\_price” and “retail\_price” has correlation higher than 0.80
+
+``` r
+df_cor <- cloth3 %>% 
+  select(is.numeric)
+
+corrplot(cor(df_cor), method = "number", type = "upper")
+```
+
+![](summer_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
+
+This feature selection will be handled in next section.
+
+### 6.3 Inferential Model
+
+In this real dataset, pareto principle (80:20) is applied heavily, where
+in the categorical variables, most of the data are concentrated in
+certain levels and in a result, the remaining levels have insufficient
+for efficient modeling.
+
+This is happening to the “shipping\_option\_name”,
+“product\_variation\_size\_id”, and “colour”. Therefore I will try to
+group the level with less data into “other” category to help analysis.
+
+**1. shipping\_option\_name**
+
+Examining the distribution of sample sizes:
+
+``` r
+cloth3 %>% 
+  select(shipping_option_name) %>% 
+  group_by(shipping_option_name) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion = count/total) %>% 
+  kable(align = "c")
+```
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center;">
+shipping\_option\_name
+</th>
+<th style="text-align:center;">
+count
+</th>
+<th style="text-align:center;">
+total
+</th>
+<th style="text-align:center;">
+proportion
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+Livraison standard
+</td>
+<td style="text-align:center;">
+1397
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.9588195
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Standard Shipping
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0137268
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Envio Padrão
+</td>
+<td style="text-align:center;">
+7
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0048044
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Expediere Standard
+</td>
+<td style="text-align:center;">
+6
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0041181
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Envío normal
+</td>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0034317
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+&lt;U+0627&gt;&lt;U+0644&gt;&lt;U+0634&gt;&lt;U+062D&gt;&lt;U+0646&gt;
+&lt;U+0627&gt;&lt;U+0644&gt;&lt;U+0642&gt;&lt;U+064A&gt;&lt;U+0627&gt;&lt;U+0633&gt;&lt;U+064A&gt;
+</td>
+<td style="text-align:center;">
+4
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0027454
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+&lt;U+0421&gt;&lt;U+0442&gt;&lt;U+0430&gt;&lt;U+043D&gt;&lt;U+0434&gt;&lt;U+0430&gt;&lt;U+0440&gt;&lt;U+0442&gt;&lt;U+043D&gt;&lt;U+0430&gt;&lt;U+044F&gt;
+&lt;U+0434&gt;&lt;U+043E&gt;&lt;U+0441&gt;&lt;U+0442&gt;&lt;U+0430&gt;&lt;U+0432&gt;&lt;U+043A&gt;&lt;U+0430&gt;
+</td>
+<td style="text-align:center;">
+3
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0020590
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Standardowa wysylka
+</td>
+<td style="text-align:center;">
+3
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0020590
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Standardversand
+</td>
+<td style="text-align:center;">
+3
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0020590
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+&lt;U+0E01&gt;&lt;U+0E32&gt;&lt;U+0E23&gt;&lt;U+0E2A&gt;&lt;U+0E48&gt;&lt;U+0E07&gt;&lt;U+0E2A&gt;&lt;U+0E34&gt;&lt;U+0E19&gt;&lt;U+0E04&gt;&lt;U+0E49&gt;&lt;U+0E32&gt;&lt;U+0E21&gt;&lt;U+0E32&gt;&lt;U+0E15&gt;&lt;U+0E23&gt;&lt;U+0E10&gt;&lt;U+0E32&gt;&lt;U+0E19&gt;
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0013727
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Livraison Express
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0013727
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Spedizione standard
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0013727
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Standart Gönderi
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0013727
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+&lt;U+1780&gt;&lt;U+17B6&gt;&lt;U+179A&gt;&lt;U+178A&gt;&lt;U+17B9&gt;&lt;U+1780&gt;&lt;U+1787&gt;&lt;U+1789&gt;&lt;U+17D2&gt;&lt;U+1787&gt;&lt;U+17BC&gt;&lt;U+1793&gt;&lt;U+178F&gt;&lt;U+17B6&gt;&lt;U+1798&gt;&lt;U+179F&gt;&lt;U+17D2&gt;&lt;U+178F&gt;&lt;U+1784&gt;&lt;U+17CB&gt;&lt;U+178A&gt;&lt;U+17B6&gt;&lt;U+179A&gt;
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0006863
+</td>
+</tr>
+</tbody>
+</table>
+
+Keep only Livraison standard and group all other shipping option in
+“other\_shipping”. I will also remove the original
+shipping\_option\_name column.
+
+``` r
+# The codes
+
+cloth3 <- cloth3 %>% 
+  mutate(shipping_option_name = as.character(shipping_option_name),
+         shipping_name = case_when(shipping_option_name != "Livraison standard" ~ "Other_shipping",
+                                           TRUE ~ shipping_option_name),
+         shipping_name = as.factor(shipping_name)) %>% 
+  dplyr::select(-shipping_option_name)
+
+# The result
+
+cloth3 %>% 
+  select(shipping_name) %>% 
+  group_by(shipping_name) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion = count/total) %>% 
+  kable(align = "c")
+```
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center;">
+shipping\_name
+</th>
+<th style="text-align:center;">
+count
+</th>
+<th style="text-align:center;">
+total
+</th>
+<th style="text-align:center;">
+proportion
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+Livraison standard
+</td>
+<td style="text-align:center;">
+1397
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.9588195
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Other\_shipping
+</td>
+<td style="text-align:center;">
+60
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0411805
+</td>
+</tr>
+</tbody>
+</table>
+
+**2. product\_variation\_size\_id**
+
+Examine the sample size of each level:
+
+``` r
+cloth3 %>% 
+  select(product_variation_size_id ) %>% 
+  group_by(product_variation_size_id ) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion_percentage = count/total * 100) %>% 
+  kable(align = "c")
+```
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center;">
+product\_variation\_size\_id
+</th>
+<th style="text-align:center;">
+count
+</th>
+<th style="text-align:center;">
+total
+</th>
+<th style="text-align:center;">
+proportion\_percentage
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+S
+</td>
+<td style="text-align:center;">
+647
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+44.4063143
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+XS
+</td>
+<td style="text-align:center;">
+340
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+23.3356211
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+M
+</td>
+<td style="text-align:center;">
+197
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+13.5209334
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+XXS
+</td>
+<td style="text-align:center;">
+97
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+6.6575154
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+L
+</td>
+<td style="text-align:center;">
+51
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+3.5003432
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+XXL
+</td>
+<td style="text-align:center;">
+19
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+1.3040494
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+XL
+</td>
+<td style="text-align:center;">
+17
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+1.1667811
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+XXXXL
+</td>
+<td style="text-align:center;">
+8
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.5490734
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+XXXS
+</td>
+<td style="text-align:center;">
+6
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.4118051
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+XXXXXL
+</td>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.3431709
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+XXXL
+</td>
+<td style="text-align:center;">
+4
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.2745367
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2PCS
+</td>
+<td style="text-align:center;">
+3
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.2059025
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+33
+</td>
+<td style="text-align:center;">
+3
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.2059025
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+34
+</td>
+<td style="text-align:center;">
+3
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.2059025
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+25
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+29
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+35
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+EU 35
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+ONE SIZE
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+S BUST 88CM
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+SIZE XXS
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+SUIT S
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+04 3XL
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+1 PC XL
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+100 CM
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+100 X 100CM 39 3 X 39 3INCH
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+10PCS
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+1M BY 3M
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+20PCS
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+20PCS 10PAIRS
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+25 S
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+26 WAIST 72CM 28INCH
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+30 CM
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+32 L
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+36
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+4
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+4 5 YEARS
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+40 CM
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+5PAIRS
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+60
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+6XL
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+80 X 200 CM
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+AU PLUG LOW QUALITY
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+BABY FLOAT BOAT
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+CHOOSE A SIZE
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+DAUGHTER 24M
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+EU39 US8
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+FIRST GENERATION
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+FLOATING CHAIR FOR KID
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+PACK OF 1
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+PANTS S
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+S WAIST58 62CM
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+S DIAMETER 30CM
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+S M CHILD
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+SIZE S
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+US 6 5 EU 37
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+US S
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+US5 5 EU35
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+WOMEN SIZE 36
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+WOMEN SIZE 37
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+X L
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+</tbody>
+</table>
+
+-   I will keep only S, XS, M, XXS, L, XXL, and XL, they contribute
+    roughly 90% of to the dataset, and grouping the rest of the levels
+    into “other size”
+
+``` r
+# The codes
+
+cloth3 <- cloth3 %>% 
+  mutate(product_variation_size_id = as.character(product_variation_size_id),
+         product_sizes = case_when(product_variation_size_id == "S" ~ "S",
+                                   product_variation_size_id == "XS" ~ "XS",
+                                   product_variation_size_id == "M" ~ "M",
+                                   product_variation_size_id == "XXS" ~ "XXS",
+                                   product_variation_size_id == "L" ~ "L",
+                                   product_variation_size_id == "XXL" ~ "XXL",
+                                   product_variation_size_id == "X" ~ "X",
+                                           TRUE ~ "Other_sizes"),
+         product_sizes = as.factor(product_sizes)) %>% 
+  dplyr::select(-product_variation_size_id)
+
+# Checking
+
+cloth3 %>% 
+  select(product_sizes) %>% 
+  group_by(product_sizes) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion_percentage = count/total * 100) %>% 
+  kable(align = "c")
+```
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center;">
+product\_sizes
+</th>
+<th style="text-align:center;">
+count
+</th>
+<th style="text-align:center;">
+total
+</th>
+<th style="text-align:center;">
+proportion\_percentage
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+S
+</td>
+<td style="text-align:center;">
+647
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+44.406314
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+XS
+</td>
+<td style="text-align:center;">
+340
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+23.335621
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+M
+</td>
+<td style="text-align:center;">
+197
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+13.520933
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Other\_sizes
+</td>
+<td style="text-align:center;">
+106
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+7.275223
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+XXS
+</td>
+<td style="text-align:center;">
+97
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+6.657515
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+L
+</td>
+<td style="text-align:center;">
+51
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+3.500343
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+XXL
+</td>
+<td style="text-align:center;">
+19
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+1.304049
+</td>
+</tr>
+</tbody>
+</table>
+
+**3. product\_color**
+
+Lastly, I apply the same technique to “product\_color”. Examine the
+sample sizes of its levels:
+
+``` r
+cloth3 %>% 
+  select(product_color) %>% 
+  group_by(product_color) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion_percentage = count/total * 100) %>% 
+  kable(align = "c")
+```
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center;">
+product\_color
+</th>
+<th style="text-align:center;">
+count
+</th>
+<th style="text-align:center;">
+total
+</th>
+<th style="text-align:center;">
+proportion\_percentage
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+black
+</td>
+<td style="text-align:center;">
+288
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+19.7666438
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+white
+</td>
+<td style="text-align:center;">
+236
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+16.1976664
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+pink
+</td>
+<td style="text-align:center;">
+101
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+6.9320522
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+blue
+</td>
+<td style="text-align:center;">
+97
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+6.6575154
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+yellow
+</td>
+<td style="text-align:center;">
+97
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+6.6575154
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+red
+</td>
+<td style="text-align:center;">
+92
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+6.3143445
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+green
+</td>
+<td style="text-align:center;">
+86
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+5.9025395
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+grey
+</td>
+<td style="text-align:center;">
+79
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+5.4221002
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+purple
+</td>
+<td style="text-align:center;">
+50
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+3.4317090
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+armygreen
+</td>
+<td style="text-align:center;">
+33
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+2.2649279
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+winered
+</td>
+<td style="text-align:center;">
+29
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+1.9903912
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+navyblue
+</td>
+<td style="text-align:center;">
+28
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+1.9217570
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+orange
+</td>
+<td style="text-align:center;">
+25
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+1.7158545
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+multicolor
+</td>
+<td style="text-align:center;">
+20
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+1.3726836
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+beige
+</td>
+<td style="text-align:center;">
+13
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.8922443
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+lightblue
+</td>
+<td style="text-align:center;">
+12
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.8236102
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+khaki
+</td>
+<td style="text-align:center;">
+11
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.7549760
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+white & green
+</td>
+<td style="text-align:center;">
+10
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.6863418
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+rosered
+</td>
+<td style="text-align:center;">
+9
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.6177076
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+brown
+</td>
+<td style="text-align:center;">
+7
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.4804393
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+coffee
+</td>
+<td style="text-align:center;">
+7
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.4804393
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+darkblue
+</td>
+<td style="text-align:center;">
+6
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.4118051
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+skyblue
+</td>
+<td style="text-align:center;">
+6
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.4118051
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+floral
+</td>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.3431709
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+rose
+</td>
+<td style="text-align:center;">
+5
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.3431709
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+black & green
+</td>
+<td style="text-align:center;">
+4
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.2745367
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+fluorescentgreen
+</td>
+<td style="text-align:center;">
+4
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.2745367
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+leopard
+</td>
+<td style="text-align:center;">
+4
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.2745367
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+lightgreen
+</td>
+<td style="text-align:center;">
+4
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.2745367
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+black & white
+</td>
+<td style="text-align:center;">
+3
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.2059025
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+camouflage
+</td>
+<td style="text-align:center;">
+3
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.2059025
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+lightpink
+</td>
+<td style="text-align:center;">
+3
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.2059025
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+orange-red
+</td>
+<td style="text-align:center;">
+3
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.2059025
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+applegreen
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+apricot
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+black & blue
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+black & yellow
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+burgundy
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+camel
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+coolblack
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+coralred
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+dustypink
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+lakeblue
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+lightred
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+lightyellow
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+mintgreen
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+navy
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+navy blue
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+pink & black
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+pink & blue
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+pink & grey
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+pink & white
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+watermelonred
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+white & black
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+whitefloral
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+wine
+</td>
+<td style="text-align:center;">
+2
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.1372684
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+army
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+black & stripe
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+blue & pink
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+brown & yellow
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+claret
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+denimblue
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+gold
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+gray & white
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+greysnakeskinprint
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+ivory
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+jasper
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+leopardprint
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+lightgray
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+lightgrey
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+lightkhaki
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+lightpurple
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+navyblue & white
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+nude
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+offblack
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+offwhite
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+orange & camouflage
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+prussianblue
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+rainbow
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+red & blue
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+rosegold
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+silver
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+star
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+violet
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+white & red
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+whitestripe
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+winered & yellow
+</td>
+<td style="text-align:center;">
+1
+</td>
+<td style="text-align:center;">
+1457
+</td>
+<td style="text-align:center;">
+0.0686342
+</td>
+</tr>
+</tbody>
+</table>
+
+## 7 Predictive Aanalysis
+
+The machine learning technique is to build models and choose the best
+one to predict *how well a product is going to sell*.
+
+``` r
+model_mlr <- cloth3
+```
+
+## Legality
 
 ## Reference
 

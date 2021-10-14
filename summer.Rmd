@@ -27,6 +27,11 @@ library(skimr)
 library(lubridate)
 library(hrbrthemes)
 library(hrbrthemes)
+library(tidytext)
+library(ggExtra)
+library(patchwork)
+library(tidytext)
+library(corrplot)
 
 # Format setting
 
@@ -464,11 +469,11 @@ levels(cloth2$price_class)
 
 
 
-## 5 Exploratory Data Analysis (EDA)
+## 5 Visualisation
 
 This section will analyse the 5 main tasks listed in the introduction.
 
-### 5.1 Validated! Human sensitive to price drops.
+### 5.1 Validated! Human sensitive to price drops
 
 This section answers the first task of this project - **How about trying to validate the established idea of human sensitiveness to price drops ?**
 
@@ -479,7 +484,7 @@ Following is the first graph, it appears that there is no obvious relation betwe
 
 ```{r, fig.width=10, fig.height=6, warning=FALSE}
 
-ggplot(cloth2, aes(x = discount_per, y = units_sold)) +
+p1 <- ggplot(cloth2, aes(x = discount_per, y = units_sold)) +
   geom_jitter(size = 4, alpha = 0.2, colour = "green") +
   labs(x = "Discount (%)",
        y = "Unit Sold (Quantity)",
@@ -489,9 +494,11 @@ ggplot(cloth2, aes(x = discount_per, y = units_sold)) +
   scale_y_continuous(labels = function(x)paste0((x/1000), "k"))
 
 
+p1
+
 ```
 
-However, following bar chart shows that 
+However, following bar chart shows that in term of the total number of products sold from different discount classes, it is definitely that a discount rate between 75% to near 100% will outcompete other discount classes.
 
 ```{r, fig.width=9, warning=FALSE}
 
@@ -508,7 +515,7 @@ df1 <- cloth2 %>%
 
 
 
-ggplot(df1, aes(x = class, y = total, fill = class)) +
+p2 <- ggplot(df1, aes(x = class, y = total, fill = class)) +
   geom_bar(stat = "identity", colour = "black") +
   geom_label(aes(label = prettyNum(total, big.mark = ",")), vjust = -1, fill = "grey") +
   labs(x = "Discounts",
@@ -522,9 +529,10 @@ ggplot(df1, aes(x = class, y = total, fill = class)) +
         axis.title.y = element_text(margin = margin(0, 10, 0, 0)),
         axis.title.x = element_text(margin = margin(10, 0, 0, 0)))
 
-
+p2
 
 ```
+
 Please be aware. This result shows a tend but is not a well-designed proper experiment. It is a trend based on collected observation. However, it do show a trend that the higher the discount rate, the more the total number of items sold. It may help to conclude that human is sensitive towards price. 
  
 To explain why discount rate at "0%" has the highest items sold, it is because that human sensitivity to price drops is a complex mechanism. For examples, there are much more items that are sold at 0% have their prices already much cheaper than the discounted items, regardless of price-drop magnitude. Though these items are having far cheap prices but also having a value that is enough to build trust from consumer and made their purchases succeed. 
@@ -561,15 +569,18 @@ color_df <- df2 %>%
 
 # plot
 
-ggplot(color_df, aes(y = fct_reorder(product_color, total), x = total, group = 1)) +
+p3 <- ggplot(color_df, aes(y = fct_reorder(product_color, total), x = total, group = 1)) +
   geom_point(size = 3) +
   geom_line(size = 1) +
   theme_modern_rc() +
   labs(x = "Total Sold per Item Category",
        y = "Colour Category",
        title = "Top 5 Best-Selling Colours are Black, White, Grey, Purple, and Blue") +
-  theme(plot.title = element_text(size = 17))
+  theme(plot.title = element_text(size = 17)) +
+  scale_x_continuous(labels = function(x)(prettyNum(x, big.mark = ",")))
 
+
+p3 
 
 ```
 
@@ -587,15 +598,17 @@ size_df <- df2 %>%
 
 # plot
 
-ggplot(size_df, aes(y = fct_reorder(product_variation_size_id, total), x = total, group = 1)) +
+p4 <- ggplot(size_df, aes(y = fct_reorder(product_variation_size_id, total), x = total, group = 1)) +
   geom_point(size = 3, color = "yellow") +
   geom_line(size = 1, color = "yellow") +
   theme_modern_rc() +
   labs(x = "Total Sold per Item Category",
        y = "Size Category",
        title = "Top 5 Best-Selling Sizes are S, M, XS, L and XXS") +
-  theme(plot.title = element_text(size = 17))
+  theme(plot.title = element_text(size = 17)) +
+  scale_x_continuous(labels = function(x)(prettyNum(x, big.mark = ",")))
 
+p4
 
 ```
 
@@ -611,14 +624,18 @@ The price does not have obvious relationship with the rating and sales.
 
 ```{r, fig.width=9, fig.height=6, warning=FALSE}
 
-ggplot(cloth2, aes(x = rating, y = units_sold, colour = price_class)) +
+p5 <- ggplot(cloth2, aes(x = rating, y = units_sold, colour = price_class)) +
   geom_point(size = 3, alpha = 0.4) +
   theme_modern_rc() +
   labs(x = "Product Rating (1 - 5)",
        y = "Units Sold (Count)",
        title = "Best Performing Rating Falls Between 3 - 5") +
   theme(plot.title = element_text(vjust = 2)) +
-  facet_wrap(~price_class)
+  facet_wrap(~price_class) +
+  scale_y_continuous(labels = function(x)(prettyNum(x, big.mark = ",")))
+
+
+p5
 
 ```
 
@@ -627,24 +644,436 @@ ggplot(cloth2, aes(x = rating, y = units_sold, colour = price_class)) +
 
 The fourth analysis task of this project asked: **Do seller's fame factor into top products?**
 
-Two options here, whether I should use "merchant_rating_count" and "merchant_rating" for this analysis. The "merchant_rating_count" will indicate total number of rating, which would indicate how popular the seller is. On the other hand, "merchant_rating" will only give the overall rating of the seller, and it won't tell how many buyers are voting for the seller.
+There are two options here, whether I should use "merchant_rating_count" or "merchant_rating" for this analysis. The "merchant_rating_count" indicates total number of rating, which would indirectly tell how popular a seller is. On the other hand, "merchant_rating" will only give the overall rating of a seller, and it won't tell how many buyers are voting for the seller.
 
-Therefore, I will use "merchant_rating_count" to be an indication of "fame factor" as specified by the task of this section. 
+Therefore, I will use "merchant_rating_count" to be a better indication of "fame factor" specified by the task.
 
+```{r, warning=FALSE, fig.width=12, fig.height=8, message=FALSE}
 
-nifty chart 
+library(patchwork)
 
-```{r, warning=FALSE}
 
 df5 <- cloth2 %>% dplyr::select(units_sold, product_color, product_variation_size_id, 
                                   merchant_rating_count, merchant_rating_count, merchant_rating)
 
 
-ggplot(df5, aes(x = log(merchant_rating_count), y = units_sold)) +
-  geom_point(colour = "orange") +
-  geom_smooth() +
-  theme_modern_rc()
+p1 <- ggplot(df5, aes(x = log(merchant_rating_count), y = units_sold)) +
+  geom_point(colour = "orange", shape = 21, size = 4) +
+  geom_smooth(colour = "white") +
+  theme_modern_rc() +
+  labs(x = "log(Merchant Rating Count)",
+       y = "Unit Sold (Count)",
+       title = "logarithmic") 
+  
 
+df5 <- cloth2 %>% dplyr::select(units_sold, product_color, product_variation_size_id, 
+                                  merchant_rating_count, merchant_rating_count, merchant_rating)
+
+
+p2 <- ggplot(df5, aes(x = merchant_rating_count, y = units_sold)) +
+  geom_point(colour = "pink", shape = 21, size = 4) +
+  geom_smooth(colour = "white") +
+  theme_modern_rc() +
+  labs(x = "Merchant Rating Count",
+       y = "Unit Sold (Count)",
+       title = "Arithmetic") +
+  scale_x_continuous(labels = function(x)(prettyNum(x, big.mark = ",")))
+
+mypatch <- p2 + p1 & theme_modern_rc() 
+
+mypatch + 
+  plot_annotation(title = "Gentle Relationship between Fame and Sales") +
+  theme(text = element_text(size = 40))
+  
+
+```
+
+*Insights*
+
+* The fame of a merchant is important but not critical.  
+* Sales will increase with the popularity of a merchant.  
+* However, the relationship is not absolute proved by the evidence of arithmetic graph. 
+
+
+### 5.5 Tags (Text) Analysis
+
+
+The fifth question: *Do the number of tags (making a product more discoverable) factor into the success of a product ?*
+
+
+```{r, fig.width=8, fig.height=6, warning=FALSE}
+
+# df 
+
+df5 <- cloth2 %>% 
+  dplyr::select(merchant_name, price_class, price, units_sold, tags) %>% 
+  mutate(tags = as.character(tags))
+
+seller_tags <- df5 %>% 
+  unnest_tokens(input = tags, output = word) %>%        # Tokenise tags 
+  group_by(merchant_name) %>% 
+  summarise(tags_count = n()) %>% 
+  arrange(desc(tags_count))
+
+# join tables
+
+df5.2 <- df5 %>% 
+  left_join(seller_tags, by = "merchant_name")
+
+# plot
+
+ggplot(df5.2, aes(x = tags_count, y = units_sold)) +
+  geom_hex(bins = 40, colour = "grey") +
+  theme_modern_rc() +
+  theme(legend.position = "right",
+        plot.title = element_text(face = "bold", size = 14, vjust = 2)) +
+  labs(title = "Tags are Required But No Direct Impacts On Product Success",
+       x = "Number of Tags",
+       y = "Units Sold") +
+  scale_y_continuous(labels = function(x)(prettyNum(x, big.mark = ","))) 
+
+
+
+```
+
+
+## 6 Staitistcal Analysis
+
+This section will start to evaluate the statistical relationship between *how well a product is sold* with all other relevant variables. The responding variable will be "units_sold".
+
+
+### 6.1 Feature Selection
+
+**Primary Addition**
+
+The number of tags in relation to the number of each product sold will be very interesting to include. This value can be attracted from the "tags" column that has a massive amount of text describing relevant tags. This extraction has been done in section 5.5. Here, I will just add the extracted column into the current dataset. 
+
+```{r}
+cloth2 <- cloth2 %>% 
+  left_join(seller_tags, by = "merchant_name")
+
+
+```
+
+**Primary Removing**
+
+This section will remove variables that is irrelevant to this analysis based on my domain knowledge. I will based on the characteristics of a feature, for examples (1) if there are too many missing values in that column (I have done it during data cleaning), (2) The data in the column do not help in categorising the data such as having non-repeated unique values in the entire column, (3) The column is basically irrelevant to the predictive objective.  
+
+Variables I am removing include:
+
+* title_orig  
+* tags  
+* merchant_title   
+* merchant_name  
+* merchant_info_subtitle  
+* the accidentally induced column - "2"     
+
+```{r}
+
+cloth3 <- cloth2 %>% dplyr::select(-title_orig, -tags, -merchant_title, -merchant_name, -merchant_info_subtitle, -'2')
+
+```
+
+### 6.2 EDA
+
+#### 6.2.1 Histogram
+
+Following histogram looks for the trends of all numerical variables.
+
+```{r, fig.width=12, fig.height=12, warning=FALSE}
+
+# df
+
+df.his <- cloth3 %>% 
+  gather(key = "key", value = "value") %>% 
+  mutate(value = as.numeric(value))
+
+# plot
+
+ggplot(df.his, aes(x = value, fill = key)) + 
+  geom_histogram(colour = "black") +
+  facet_wrap(~key, scale = "free") +
+  theme_modern_rc() +
+  theme(legend.position = "none",
+        strip.text = element_text(colour = "white", size = 10)) 
+  
+
+```
+
+*Insights*
+
+* Identify that *badge_fast_shipping*, *badge_local_product*, *badge_product_quality*, *merchant_has_profile_picture*, *uses_ad_boosts*, and *shipping_is_express* are binary variable and should be converted to factor. 
+
+```{r}
+cloth3 <- cloth3 %>% 
+  mutate(badge_fast_shipping = as.factor(badge_fast_shipping),
+         badge_local_product = as.factor(badge_local_product),
+         badge_product_quality = as.factor(badge_product_quality),
+         merchant_has_profile_picture = as.factor(merchant_has_profile_picture),
+         uses_ad_boosts = as.factor(uses_ad_boosts),
+         shipping_is_express = as.factor(shipping_is_express))
+
+```
+
+* *inventory_total* is a numerical variable with only single value of 50, information gaining from this variable in relation to the number of product soil will be limited. Therefore, this variable will be removed.
+
+```{r}
+cloth3 <- cloth3 %>% dplyr::select(-inventory_total)
+
+```
+
+
+* Most variables have skewed distribution, variables that has high potential predictive power (Gaussian distributed) are country_shiped to, merchant rating, price, rating, and perhaps tags_count.
+
+* A non-parametric machine learning algorithm should applied for this dataset.
+
+
+Following histogram looks for the trends of all categorical variables.
+
+
+```{r, warning=FALSE, fig.height=20, fig.width=12}
+
+his_cat <- cloth3 %>% 
+  dplyr::select(origin_country, price_class, product_color, shipping_option_name) 
+
+his_cat <- his_cat %>% 
+  gather(key = "key", value = "value") %>% 
+  group_by(key, value) 
+  
+
+ggplot(his_cat, aes(y = reorder(value, table(value)[value]), colour = key)) +
+  geom_bar(fill = "black") +
+  facet_wrap(~key, scale = "free", ncol = 1, nrow = 4) +
+  theme_modern_rc() +
+  theme(legend.position = "none",
+        strip.text = element_text(colour = "white"))
+
+
+```
+
+From above graph, we are able to see which categorical level are the dominant ones. Product color might be harder to see and so I provide an alternative zoomed version before with count higher than 50. 
+
+```{r, message=FALSE, fig.width=8, fig.height=8}
+
+his_cat_color <- his_cat %>% 
+  filter(key == "product_color") %>% 
+  group_by(value) %>% 
+  summarise(count = n()) %>% 
+  filter(count > 20)
+  
+ggplot(his_cat_color, aes(y = fct_reorder(value, count), x = count, colour = value)) +
+  geom_bar(fill = "black", stat = "identity") +
+  theme_modern_rc() +
+  theme(legend.position = "none") +
+  labs(x = "Count",
+       y = "Product Colour",
+       title = "Zoomed in to Dominant Product Colour (Count > 50)")
+
+```
+
+
+#### 6.2.2 Boxplot
+
+Applying boxplot to visualise the existence of outliers and how are data distributed in the form of box plot in each feature.  
+
+```{r,warning=FALSE, fig.width=12, fig.height=9}
+
+# df
+
+df.box <- cloth3 %>% 
+  select(is.numeric) %>% 
+  gather(key = "key", value = "value") %>% 
+  mutate(value = as.numeric(value))
+
+# plot
+
+ggplot(df.box, aes(x = value, fill = key)) +
+  geom_boxplot(colour = "white") +
+  facet_wrap(~key, scale = "free", ncol = 5, nrow = 3) +
+  theme_modern_rc() +
+  theme(legend.position = "none",
+        strip.text = element_text(size = 12, colour = "white"))
+
+```
+
+There are many outliers in each features. It may affect the assumption of regression models and a non-parametric machine learning model that immune to outlier should be applied. 
+
+
+#### 6.3.3 Relationship Curve
+
+* Relationship between 
+
+```{r, fig.width=10, fig.height=10}
+
+df_rela <- cloth3 %>% 
+  select(is.numeric) %>% 
+  gather(key = "key", value = "value", -units_sold) 
+
+ 
+ggplot(df_rela, aes(x = value, y = units_sold, colour = key)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~key, scales = "free") +
+  theme_bw() +
+  theme(legend.position = "none",
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5, vjust = 2),
+        strip.text = element_text(size = 10)) +
+  geom_smooth(se = F) +
+  labs(x = "Variables",
+       y = "Units Sold",
+       title = "Relationship between Numeric Predictors with Units Sold")
+
+```
+
+The relationship between each predictors with the "units sold" (It can be understood as how well a product is sold) is complex. It is a rare situation where graphical transformation of data doesn't help much. I will apply inferential model later to help interpretation. 
+
+
+#### 6.3.3 Correlogram 
+
+This section is to check multicollinearity between numerical predictors. As a rule of thumb, the pair of predictors with correlation above 0.8 should have one removed among the both to avoid multicollinearity problem. If it is not done, the standard errors of coefficients estimates during regression analysis will be inflated, and may affect the accuracy of respective P-values. I will also apply VIF to support the decisions made in this correlogram. 
+
+**Insights:**
+
+* "Shipping_option_price" and "price" has correlation higher than 0.80  
+* "retail_price" and "retail_price" has correlation higher than 0.80  
+
+
+```{r, fig.width=10, fig.height=10}
+
+df_cor <- cloth3 %>% 
+  select(is.numeric)
+
+corrplot(cor(df_cor), method = "number", type = "upper")
+
+```
+
+This feature selection will be handled in next section.
+
+
+### 6.3 Inferential Model
+
+In this real dataset, pareto principle (80:20) is applied heavily, where in the categorical variables, most of the data are concentrated in certain levels and in a result, the remaining levels have insufficient for efficient modeling.
+
+This is happening to the "shipping_option_name", "product_variation_size_id", and "colour". Therefore I will try to group the level with less data into "other" category to help analysis. 
+
+
+**1. shipping_option_name**
+
+Examining the distribution of sample sizes:
+
+```{r}
+
+cloth3 %>% 
+  select(shipping_option_name) %>% 
+  group_by(shipping_option_name) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion = count/total) %>% 
+  kable(align = "c")
+
+```
+
+Keep only Livraison standard and group all other shipping option in "other_shipping". I will also remove the original shipping_option_name column.
+
+```{r}
+# The codes
+
+cloth3 <- cloth3 %>% 
+  mutate(shipping_option_name = as.character(shipping_option_name),
+         shipping_name = case_when(shipping_option_name != "Livraison standard" ~ "Other_shipping",
+                                           TRUE ~ shipping_option_name),
+         shipping_name = as.factor(shipping_name)) %>% 
+  dplyr::select(-shipping_option_name)
+
+# The result
+
+cloth3 %>% 
+  select(shipping_name) %>% 
+  group_by(shipping_name) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion = count/total) %>% 
+  kable(align = "c")
+```
+
+**2. product_variation_size_id**
+
+Examine the sample size of each level:  
+
+```{r}
+
+cloth3 %>% 
+  select(product_variation_size_id ) %>% 
+  group_by(product_variation_size_id ) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion_percentage = count/total * 100) %>% 
+  kable(align = "c")
+
+```
+
+
+* I will keep only S, XS, M, XXS, L, XXL, and XL, they contribute roughly 90% of to the dataset, and grouping the rest of the levels into "other size"
+
+
+```{r}
+
+# The codes
+
+cloth3 <- cloth3 %>% 
+  mutate(product_variation_size_id = as.character(product_variation_size_id),
+         product_sizes = case_when(product_variation_size_id == "S" ~ "S",
+                                   product_variation_size_id == "XS" ~ "XS",
+                                   product_variation_size_id == "M" ~ "M",
+                                   product_variation_size_id == "XXS" ~ "XXS",
+                                   product_variation_size_id == "L" ~ "L",
+                                   product_variation_size_id == "XXL" ~ "XXL",
+                                   product_variation_size_id == "X" ~ "X",
+                                           TRUE ~ "Other_sizes"),
+         product_sizes = as.factor(product_sizes)) %>% 
+  dplyr::select(-product_variation_size_id)
+
+# Checking
+
+cloth3 %>% 
+  select(product_sizes) %>% 
+  group_by(product_sizes) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion_percentage = count/total * 100) %>% 
+  kable(align = "c")
+
+```
+
+**3. product_color**
+
+Lastly, I apply the same technique to "product_color". Examine the sample sizes of its levels:
+
+```{r}
+
+cloth3 %>% 
+  select(product_color) %>% 
+  group_by(product_color) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion_percentage = count/total * 100) %>% 
+  kable(align = "c")
+
+
+```
+
+
+
+```{r}
 
 ```
 
@@ -657,18 +1086,43 @@ ggplot(df5, aes(x = log(merchant_rating_count), y = units_sold)) +
 
 
 
-* Do the number of tags (making a product more discoverable) factor into the success of a product ?
 
 
 
 
 
 
-## 6 Statistical Analysis
+
+
+
+
+
+
+## 7 Predictive Aanalysis
+
+The machine learning technique is to build models and choose the best one to predict *how well a product is going to sell*.
+
+
+```{r}
+model_mlr <- cloth3
+
+```
+
+
+
+
+
+
+
+
+
+## Legality
+
 
 
 ## Reference
 
 
 https://www.kaggle.com/jmmvutu/summer-products-and-sales-in-ecommerce-wish
+
 
