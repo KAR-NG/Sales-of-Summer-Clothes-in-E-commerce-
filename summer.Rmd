@@ -32,6 +32,7 @@ library(ggExtra)
 library(patchwork)
 library(tidytext)
 library(corrplot)
+library(caret)
 
 # Format setting
 
@@ -949,7 +950,7 @@ corrplot(cor(df_cor), method = "number", type = "upper")
 This feature selection will be handled in next section.
 
 
-### 6.3 Inferential Model
+### 6.3 Feature cleaning
 
 In this real dataset, pareto principle (80:20) is applied heavily, where in the categorical variables, most of the data are concentrated in certain levels and in a result, the remaining levels have insufficient for efficient modeling.
 
@@ -1071,15 +1072,63 @@ cloth3 %>%
 
 ```
 
-
+In this color feature, I am keeping to top 10 colours that have dominating samples size, and grouping the rest of the colour into "other colors".
 
 ```{r}
+
+ cloth3 <- cloth3 %>% 
+  mutate(product_color = as.character(product_color),
+         product_colors = case_when(product_color == "black" ~ "black",
+                                   product_color == "white" ~ "white",
+                                   product_color == "pink" ~ "pink",
+                                   product_color == "blue" ~ "blue",
+                                   product_color == "yellow" ~ "yellow",
+                                   product_color == "red" ~ "red",
+                                   product_color == "green" ~ "green",
+                                   product_color == "grey" ~ "grey",
+                                   product_color == "purple" ~ "purple",
+                                   product_color == "armygreen" ~ "armygreen",
+                                           TRUE ~ "Other_colors"),
+         product_colors = as.factor(product_colors)) %>% 
+  dplyr::select(-product_color)
+
+
+cloth3 %>% 
+  select(product_colors) %>% 
+  group_by(product_colors) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion_percentage = count/total * 100) %>% 
+  kable(align = "c")
 
 ```
 
 
 
+### 6.4 Multiple Linear Regression
 
+```{r}
+model_mlr <- lm(units_sold ~., data = cloth3)
+
+summary(model_mlr) 
+
+```
+
+
+```{r}
+library(MASS)
+
+model_step <- train(units_sold ~., data = cloth3,
+                    method = "lmStepAIC",
+                    trControl = trainControl(method = "cv",
+                                             number = 10)) 
+
+model_step$finalModel
+
+summary(model_step)
+```
 
 
 
