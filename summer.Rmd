@@ -33,6 +33,12 @@ library(patchwork)
 library(tidytext)
 library(corrplot)
 library(caret)
+library(MASS)
+library(car)
+library(widyr)
+library(igraph)
+library(ggraph)
+library(plotly)
 
 # Format setting
 
@@ -200,7 +206,6 @@ Major tasks in this section:
 ### 4.1 Remove variables
 
 This section removes variables that have been previously identified to be redundant or irrelevant to this project.  
-
 * *title*     
 * *currency_buyer*  
 * *merchant_profile_picture*  
@@ -469,7 +474,6 @@ levels(cloth2$price_class)
 
 
 
-
 ## 5 Visualisation
 
 This section will analyse the 5 main tasks listed in the introduction.
@@ -489,7 +493,7 @@ p1 <- ggplot(cloth2, aes(x = discount_per, y = units_sold)) +
   geom_jitter(size = 4, alpha = 0.2, colour = "green") +
   labs(x = "Discount (%)",
        y = "Unit Sold (Quantity)",
-       title = "Unit Sold versus Discounts ($)") +
+       title = "Unit Sold versus Discounts ($)") + 
   theme_modern_rc() +
   theme(plot.title = element_text(size = 16, face = "bold")) +
   scale_y_continuous(labels = function(x)paste0((x/1000), "k"))
@@ -504,7 +508,7 @@ However, following bar chart shows that in term of the total number of products 
 ```{r, fig.width=9, warning=FALSE}
 
 df1 <- cloth2 %>% 
-  select(discount_per, units_sold) %>% 
+  dplyr::select(discount_per, units_sold) %>% 
   mutate(class = case_when(discount_per < 0 ~ "0%",
                            discount_per > 0 & discount_per < 25 ~ "0-25%",
                            discount_per > 25 & discount_per < 50 ~ "25-50%",
@@ -691,12 +695,14 @@ mypatch +
 
 *Insights*
 
-* The fame of a merchant is important but not critical.  
+* The fame of a merchant is important, thought there is a outlier showing a famous merchant has a drop in unit sold, but more data points are needed to prove this theory.  
+
 * Sales will increase with the popularity of a merchant.  
+
 * However, the relationship is not absolute proved by the evidence of arithmetic graph. 
 
 
-### 5.5 Tags (Text) Analysis
+### 5.5 The Number of Tags in produce success
 
 
 The fifth question: *Do the number of tags (making a product more discoverable) factor into the success of a product ?*
@@ -728,7 +734,7 @@ ggplot(df5.2, aes(x = tags_count, y = units_sold)) +
   theme_modern_rc() +
   theme(legend.position = "right",
         plot.title = element_text(face = "bold", size = 14, vjust = 2)) +
-  labs(title = "Tags are Required But No Direct Impacts On Product Success",
+  labs(title = "Tags are Required and Impact on Sales",
        x = "Number of Tags",
        y = "Units Sold") +
   scale_y_continuous(labels = function(x)(prettyNum(x, big.mark = ","))) 
@@ -738,16 +744,360 @@ ggplot(df5.2, aes(x = tags_count, y = units_sold)) +
 ```
 
 
+### 5.6 EXTRA: Which text has the most sales?
+
+In term of total number of products sold, top 50 words out of 1,838 that used as tags are: 
+
+```{r, fig.width=10, fig.height=12, warning=FALSE}
+
+# set up df
+
+df5.6 <- df5 %>% 
+  unnest_tokens(input = tags, output = word) %>% 
+  anti_join(stop_words, by = "word") %>%        # remove meaningless words such as "a", "and", "the"
+  filter(str_detect(word, "[:alpha:]")) %>%     # only include alphabetical word
+  distinct()                                    # to remove duplicate word by a merchant 
+ 
+# slice the top 50 best words for units_sold
+
+df5.6.2 <- df5.6 %>% 
+  group_by(word) %>% 
+  summarise(total_sold = sum(units_sold)) %>% 
+  arrange(desc(total_sold)) %>% 
+  mutate(id = paste0("id", row_number())) %>% 
+  slice(c(1:50))
+
+
+# plot
+
+ggplot(df5.6.2, aes(y = fct_reorder(word, total_sold), x = total_sold, group = 1)) +
+  geom_point(size = 4, color = "green") +
+  geom_line(size = 1, color = "green") +
+  theme_modern_rc() +
+  labs(x = "Total Sold ",
+       y = "Texts",
+       title = "The Top 50 Best Performing Texts that Used As Tags") +
+  theme(plot.title = element_text(size = 17)) +
+  scale_x_continuous(labels = function(x)(prettyNum(x, big.mark = ",")))
+
+
+
+```
+
+
+
+
+
+### 5.7 EXTRA: Text Mining
+
+Following table shows the frequency of words that has been used for at least 100 times in the entire dataset.
+
+For example, in the entire 1457 rows of dataset, the word "fashion" has been used 1174 times for different product, 1074 times for "summer", and 1043 times of "women's".
+
+```{r}
+
+top_words <- df5.6 %>% 
+  count(word, name = "users_count") %>% 
+  arrange(desc(users_count)) %>% 
+  filter(users_count > 100)      
+
+top_words  
+  
+```   
+
+Applying pairwise correlation between words across all products. This correlation to find how often words are found together in the dataset. The default algorithm is pearson correlation. Following shows the first 6 rows out of the 228 rows from the data frame.  
+
+```{r}
+
+word_cor <- df5.6 %>% 
+  semi_join(top_words, by = "word") %>%     # df5.6 has all words, semi join to get top 100 words
+  pairwise_cor(item = word, feature = merchant_name) %>% 
+  filter(correlation >= 0.2)       # Don't include correlation that is too small.
+
+head(word_cor)
+
+
+```
+
+I have created 2 tables, one is the "frequency table" and the other one is the "correlation data frame". The relationships between these two data frames are that,
+
+(1) The "correlation table" finds the correlation between the words that found in the "frequency table" only.
+
+(2) However, not all the words found the "frequency table" will be correlated to each other in the "correlation table", while majority are. 
+
+This can be visualised from following "word network plot".
+
+```{r, fig.width=8, fig.height=6, warning=FALSE}
+
+set.seed(123)
+
+graph_from_data_frame(d = word_cor,                # the correlation between word
+                      vertices = top_words) %>%    
+  ggraph(layout=  "fr") +                          # specify an algorithm to spread out the words
+  geom_edge_link(colour = "white") +
+  geom_node_point() +
+  geom_node_text(aes(label = name), colour = "lightblue", repel = T) +
+  theme_modern_rc() +
+  theme_void() +
+  theme(legend.position = "none",
+        panel.background = element_rect(fill = "black"))
+  
+```
+
+
+
+* Three words "womens", "printed", and "lace" tend to often appear by themselves. These words only appear in the "frequency table" but not in the "correlation table".
+
+* Words that linked by the white line in the cluster means that they appear frequently together in tags. For examples:
+
+  * The combination "shorts" and "pants" appear together very frequently.  
+  * The combination "beach" and "party" appear together very frequently.   
+  * The combination "summer" and "laddis" appear together very frequently.  
+
+
+*Clean up the plot*
+
+Remove words are not connected to other words, which are the "lace", "women" and "printed".
+
+```{r, fig.width=8, fig.height=6, warning=FALSE}
+
+set.seed(123)
+
+graph_from_data_frame(d = word_cor,    
+                      vertices = top_words %>%   
+                        semi_join(word_cor, by = c("word" = "item1"))) %>%     # remove words that are not connected in cor df.
+  ggraph(layout=  "fr") +   
+  geom_edge_link(aes(alpha = correlation), colour = "white") +         # The higher the correlation, the lighter the line will be
+  geom_node_point() +
+  geom_node_text(aes(label = name, color = users_count, size = users_count), repel = TRUE) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "black"),
+        plot.background = element_rect(fill = "black"),
+        legend.text = element_text(color = "white"),
+        legend.title = element_text(color = "white"),
+        legend.background = element_rect(fill = "grey20"))
+
+
+```
+The basic of the plot is still the same, there was just a minor change of its positioning on the graph panel. I added two more items into the graph to help visualisation. 
+
+(1) The larger and brighter the words, the more merchant have used the words.
+
+(2) The brighter the line, the higher the correlation between the two associated words, or the more often the words appear together.
+
+
+Functionisation of workflow above to allow customisable adjustments for different min_user_count and min_correlation.
+
+```{r, fig.width=10, fig.height=2, warning=FALSE}
+
+set.seed(123)
+
+my_word_graph <- function(dataframe,
+                          min_users_count = 100,
+                          min_correlation = 0.2){
+  
+  # frequency data frame
+    top_words <- dataframe %>% 
+    count(word, name = "users_count") %>% 
+    arrange(desc(users_count)) %>% 
+    filter(users_count > min_users_count)
+  
+  # correlation data frame
+  word_cor <- dataframe %>% 
+    semi_join(top_words, by = "word") %>% 
+    pairwise_cor(item = word, feature = merchant_name) %>% 
+    filter(correlation >= min_correlation)  
+  
+  # plot
+    graph_from_data_frame(d = word_cor,    
+                        vertices = top_words %>%  
+                          semi_join(word_cor, by = c("word" = "item1"))) %>% 
+      ggraph(layout=  "fr") +   
+      geom_edge_link(aes(alpha = correlation), colour = "white") +         
+      geom_node_point() +
+      geom_node_text(aes(label = name, color = users_count, size = users_count), repel = TRUE) +
+      theme_void() +
+      theme(legend.position = "left",
+            panel.background = element_rect(fill = "black"),
+            plot.background = element_rect(fill = "black"),
+            legend.text = element_text(color = "white"),
+            legend.title = element_text(color = "white"),
+            legend.background = element_rect(fill = "grey20"))
+  
+}
+
+# Set correlation at 0.4
+  
+my_word_graph(dataframe = df5.6, 
+              min_users_count = 100, 
+              min_correlation = 0.4) 
+
+
+```
+
+When I set the minimum correlation to 0.4, more words are removed and left with 6 clusters. I can see that most merchant use the words "fashion", "women's", and "women" together. 
+
+
+**Text Plots for Sales**
+
+
+Plot word graph. Following graph shows that fashion, womens, and summers are the best words that can drive sales and related adjacent words that can be used together when creating a tag. 
+
+
+```{r, fig.width=10, fig.height=6}
+
+set.seed(123)
+
+word_sales <- df5.6 %>% 
+  group_by(word) %>% 
+  summarise(total_sold = sum(units_sold)) %>% 
+  arrange(desc(total_sold)) %>% 
+  filter(total_sold > 50000)
+
+word_cor <- df5.6 %>% 
+  semi_join(word_sales, by = "word") %>%     
+  pairwise_cor(item = word, feature = merchant_name) %>% 
+  filter(correlation >= 0.2)
+
+
+graph_from_data_frame(d = word_cor,    
+                      vertices = word_sales %>%   
+                        semi_join(word_cor, by = c("word" = "item1"))) %>%     
+  ggraph(layout=  "fr") +   
+  geom_edge_link(aes(alpha = correlation), colour = "white") +         
+  geom_node_point() +
+  geom_node_text(aes(label = name, color = total_sold, size = total_sold), repel = TRUE) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "black"),
+        plot.background = element_rect(fill = "black"),
+        legend.text = element_text(color = "white"),
+        legend.title = element_text(color = "white"),
+        legend.background = element_rect(fill = "grey20"))
+
+
+
+```
+
+
+### 5.8 EXTRA: Badges and Product Success 
+
+There are 3 interesting badges in the dataset that could be useful in explanining the popularity of a product.
+
+* Badge_fast_shipping: Badge awarded when this product’s order is consistently shipped rapidly. 1 means Yes.   
+
+* Badge_local_product: A badge that denotes the product is a local product. 1 means Yes.      
+
+* Badge_product_quality: Badge awarded when many buyers consistently gave good evaluations. 1 means Yes.   
+
+
+```{r, warning=FALSE, fig.width=10, fig.height=5}
+
+# df
+
+df5.7 <- cloth2 %>% 
+  dplyr::select(units_sold, badge_local_product, badge_product_quality, badge_fast_shipping) %>% 
+  mutate(badge_local_product = as.factor(badge_local_product),
+         badge_product_quality = as.factor(badge_product_quality),
+         badge_fast_shipping = as.factor(badge_fast_shipping)) %>% 
+  pivot_longer(c(2:4), names_to = "badge_type", values_to = "result")
+
+
+# plot
+
+ggplot(df5.7, aes(x = badge_type, y = units_sold, fill = result)) +
+  geom_boxplot(alpha = 0.5, aes(colour = result)) +
+  stat_summary(aes(fun = "mean"), size = 5, geom = "point", shape = 4, 
+               colour = "white", position = position_dodge(0.75)) +
+  theme_modern_rc() +
+  theme(plot.title = element_text(size = 12),
+        axis.title.y = element_text(margin = margin(0, 10, 0, 0))) +
+  labs(title = "Impact of Various Badges on Units Sold",
+       y = "Units Sold (Count)",
+       x = "Badge Type") +
+  scale_y_continuous(labels = function(x)(prettyNum(x, big.mark = ","))) 
+  
+  
+```
+
+
+
+### 5.9 EXTRA: Advertisement Boost and Product Success 
+
+Following plot shows that advertisement boost does not affect the success of a product.
+
+* The median between two boxplots (with and without advertisement boost) are nearly similar.    
+* The mean between two boxplots (with and without advertisement boost) are nearly similar.    
+* The distributions of points in two boxplots are nearly similar.  
+
+```{r, warning=FALSE, fig.width=8, fig.height=6}
+
+# df
+
+df5.8 <- cloth2 %>% 
+  dplyr::select(units_sold, uses_ad_boosts) 
+
+# plot
+
+ggplot(df5.8, aes(x = uses_ad_boosts, y = units_sold, colour = uses_ad_boosts)) +
+  geom_jitter(width = 0.2, alpha = 0.5, size = 2) +
+  geom_boxplot(outlier.shape = NA, alpha = 0, width = 0.8, colour = "grey") +
+  stat_summary(fun = "mean", size = 6, geom = "point", shape = 4, colour = "white") +
+  theme_modern_rc() +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 12),
+        axis.title.y = element_text(margin = margin(0, 10, 0, 0))) +
+  labs(title = "There is no Significant Different Between Sales and Ad.Boosts",
+       y = "Units Sold (Count)") +
+  scale_y_continuous(labels = function(x)(prettyNum(x, big.mark = ",")))
+  
+
+```
+Surprisingly, more units were sold without having the advertisement boost function from *Wish*. 
+
+```{r}
+
+# df
+
+df5.8.2 <- cloth2 %>% 
+  dplyr::select(units_sold, uses_ad_boosts) %>% 
+  group_by(uses_ad_boosts) %>% 
+  summarise(total_unit_sold = sum(units_sold)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(total_unit_sold),
+         percentage = sum(total_unit_sold/total * 100))
+
+df5.8.2
+
+# plot
+
+ggplot(df5.8.2, aes(x = uses_ad_boosts, y = total_unit_sold, colour = uses_ad_boosts, fill = uses_ad_boosts)) +
+  geom_bar(stat = "identity", alpha = 0.5) +
+  geom_text(aes(label = prettyNum(total_unit_sold, big.mark = ",")), vjust = -1) +
+  theme_modern_rc() +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 12),
+        axis.title.y = element_text(margin = margin(0, 10, 0, 0))) +
+  labs(title = "More Units Sold without Add Boosts",
+       y = "Total Sold (Count)") +
+  scale_y_continuous(labels = function(x)(prettyNum(x, big.mark = ",")), 
+                     lim = c(0, 4000000))
+  
+
+
+```
+
+
+
 ## 6 Staitistcal Analysis
 
-This section will start to evaluate the statistical relationship between *how well a product is sold* with all other relevant variables. The responding variable will be "units_sold".
+This section will start to evaluate the statistical relationship between *how well a product is sold* with all other relevant variables. This information is stored within the feature "units_sold".
 
 
 ### 6.1 Feature Selection
 
 **Primary Addition**
 
-The number of tags in relation to the number of each product sold will be very interesting to include. This value can be attracted from the "tags" column that has a massive amount of text describing relevant tags. This extraction has been done in section 5.5. Here, I will just add the extracted column into the current dataset. 
+The number of tags in relation to the number of each product sold will be very interesting to include. This value can be attracted from the "tags" column that has a massive amount of text describing relevant tags. This extraction *has been done* in section 5.5. Here, I will just add the extracted column into the current dataset. 
 
 ```{r}
 cloth2 <- cloth2 %>% 
@@ -758,11 +1108,13 @@ cloth2 <- cloth2 %>%
 
 **Primary Removing**
 
-This section will remove variables that is irrelevant to this analysis based on my domain knowledge. I will based on the characteristics of a feature, for examples (1) if there are too many missing values in that column (I have done it during data cleaning), (2) The data in the column do not help in categorising the data such as having non-repeated unique values in the entire column, (3) The column is basically irrelevant to the predictive objective.  
+Removing variables that are irrelevant to this analysis based on my domain knowledge. I will based on the characteristics of features, for examples (1) if there are too many missing values in that column (I have done it during data cleaning), (2) The data in the column do not help in categorising the data, for example if a variable is having non-repeated unique values in the entire column like a "ID" or "Name", (3) The columns that are redundant or basically irrelevant to the predictive objective.  
 
 Variables I am removing include:
 
 * title_orig  
+* price_drop
+* discount_per
 * tags  
 * merchant_title   
 * merchant_name  
@@ -771,9 +1123,168 @@ Variables I am removing include:
 
 ```{r}
 
-cloth3 <- cloth2 %>% dplyr::select(-title_orig, -tags, -merchant_title, -merchant_name, -merchant_info_subtitle, -'2')
+cloth3 <- cloth2 %>% dplyr::select(-title_orig, -price_drop, -discount_per, -tags, -merchant_title, -merchant_name, -merchant_info_subtitle, -'2')
 
 ```
+
+
+### 6.3 Feature cleaning
+
+There are too many levels for important factor variables such as  "shipping_option_name", "product_variation_size_id", and "colour" and which may make the statistical analysis too long and complex to interpret. Therefore, I will try to group the level with less data into a variable named "other" to help analysis. 
+
+
+**1. shipping_option_name**
+
+Examining the distribution of sample sizes:
+
+```{r}
+
+cloth3 %>% 
+  dplyr::select(shipping_option_name) %>% 
+  group_by(shipping_option_name) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion = count/total) %>% 
+  kable(align = "c")
+
+```
+
+Keep only Livraison standard and group all other shipping option in "other_shipping". I will also remove the original shipping_option_name column.
+
+```{r}
+# The codes
+
+cloth3 <- cloth3 %>% 
+  mutate(shipping_option_name = as.character(shipping_option_name),
+         shipping_name = case_when(shipping_option_name != "Livraison standard" ~ "Other_shipping",
+                                           TRUE ~ shipping_option_name),
+         shipping_name = as.factor(shipping_name)) %>% 
+  dplyr::select(-shipping_option_name)
+
+# The result
+
+cloth3 %>% 
+  dplyr::select(shipping_name) %>% 
+  group_by(shipping_name) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion = count/total) %>% 
+  kable(align = "c")
+```
+
+**2. product_variation_size_id**
+
+Examine the sample size of each level:  
+
+```{r}
+
+cloth3 %>% 
+  dplyr::select(product_variation_size_id ) %>% 
+  group_by(product_variation_size_id ) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion_percentage = count/total * 100) %>% 
+  kable(align = "c")
+
+```
+
+
+* I will keep only S, XS, M, XXS, L, XXL, and XL, they contribute roughly 90% of to the dataset, and grouping the rest of the levels into "other size"
+
+
+```{r}
+
+# The codes
+
+cloth3 <- cloth3 %>% 
+  mutate(product_variation_size_id = as.character(product_variation_size_id),
+         product_sizes = case_when(product_variation_size_id == "S" ~ "S",
+                                   product_variation_size_id == "XS" ~ "XS",
+                                   product_variation_size_id == "M" ~ "M",
+                                   product_variation_size_id == "XXS" ~ "XXS",
+                                   product_variation_size_id == "L" ~ "L",
+                                   product_variation_size_id == "XXL" ~ "XXL",
+                                   product_variation_size_id == "X" ~ "X",
+                                           TRUE ~ "Other_sizes"),
+         product_sizes = as.factor(product_sizes)) %>% 
+  dplyr::select(-product_variation_size_id)
+
+# Checking
+
+cloth3 %>% 
+  dplyr::select(product_sizes) %>% 
+  group_by(product_sizes) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion_percentage = count/total * 100) %>% 
+  kable(align = "c")
+
+```
+
+**3. product_color**
+
+Lastly, I apply the same technique to "product_color". Examine the sample sizes of its levels:
+
+```{r}
+
+cloth3 %>% 
+  dplyr::select(product_color) %>% 
+  group_by(product_color) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion_percentage = count/total * 100) %>% 
+  kable(align = "c")
+
+
+```
+
+In this color feature, I am keeping to top 10 colours that have dominating samples size, and grouping the rest of the colour into "other colors".
+
+```{r}
+
+ cloth3 <- cloth3 %>% 
+  mutate(product_color = as.character(product_color),
+         product_colors = case_when(product_color == "black" ~ "black",
+                                   product_color == "white" ~ "white",
+                                   product_color == "pink" ~ "pink",
+                                   product_color == "blue" ~ "blue",
+                                   product_color == "yellow" ~ "yellow",
+                                   product_color == "red" ~ "red",
+                                   product_color == "green" ~ "green",
+                                   product_color == "grey" ~ "grey",
+                                   product_color == "purple" ~ "purple",
+                                   product_color == "armygreen" ~ "armygreen",
+                                           TRUE ~ "Other_colors"),
+         product_colors = as.factor(product_colors)) %>% 
+  dplyr::select(-product_color)
+
+
+cloth3 %>% 
+  dplyr::select(product_colors) %>% 
+  group_by(product_colors) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(count),
+         proportion_percentage = count/total * 100) %>% 
+  kable(align = "c")
+
+```
+
+
+
+
+
 
 ### 6.2 EDA
 
@@ -816,26 +1327,30 @@ cloth3 <- cloth3 %>%
 
 ```
 
-* *inventory_total* is a numerical variable with only single value of 50, information gaining from this variable in relation to the number of product soil will be limited. Therefore, this variable will be removed.
+* *inventory_total* is a numerical variable with only single value of 50, information gaining from this variable in relation to the number of product soil will be limited. Therefore, this variable should be removed.
 
 ```{r}
 cloth3 <- cloth3 %>% dplyr::select(-inventory_total)
 
 ```
 
+* Most variables have skewed distribution, variables that has high potential predictive power (Gaussian distributed) are country_shipped_to, merchant rating, price, rating, and perhaps tags_count.
 
-* Most variables have skewed distribution, variables that has high potential predictive power (Gaussian distributed) are country_shiped to, merchant rating, price, rating, and perhaps tags_count.
 
-* A non-parametric machine learning algorithm should applied for this dataset.
+```{r}
+cloth3
+```
 
+
+
+**Categorical variables**
 
 Following histogram looks for the trends of all categorical variables.
-
 
 ```{r, warning=FALSE, fig.height=20, fig.width=12}
 
 his_cat <- cloth3 %>% 
-  dplyr::select(origin_country, price_class, product_color, shipping_option_name) 
+  dplyr::select(origin_country, price_class, product_colors, shipping_name) 
 
 his_cat <- his_cat %>% 
   gather(key = "key", value = "value") %>% 
@@ -852,37 +1367,21 @@ ggplot(his_cat, aes(y = reorder(value, table(value)[value]), colour = key)) +
 
 ```
 
-From above graph, we are able to see which categorical level are the dominant ones. Product color might be harder to see and so I provide an alternative zoomed version before with count higher than 50. 
+It is important to note that "Other_colors" in the graph of "product_color" is a combination of numerous colour, and therefore the best color is black. 
 
-```{r, message=FALSE, fig.width=8, fig.height=8}
 
-his_cat_color <- his_cat %>% 
-  filter(key == "product_color") %>% 
-  group_by(value) %>% 
-  summarise(count = n()) %>% 
-  filter(count > 20)
-  
-ggplot(his_cat_color, aes(y = fct_reorder(value, count), x = count, colour = value)) +
-  geom_bar(fill = "black", stat = "identity") +
-  theme_modern_rc() +
-  theme(legend.position = "none") +
-  labs(x = "Count",
-       y = "Product Colour",
-       title = "Zoomed in to Dominant Product Colour (Count > 50)")
-
-```
 
 
 #### 6.2.2 Boxplot
 
 Applying boxplot to visualise the existence of outliers and how are data distributed in the form of box plot in each feature.  
 
-```{r,warning=FALSE, fig.width=12, fig.height=9}
+```{r,warning=FALSE, fig.width=18, fig.height=9}
 
 # df
 
 df.box <- cloth3 %>% 
-  select(is.numeric) %>% 
+  dplyr::select(is.numeric) %>% 
   gather(key = "key", value = "value") %>% 
   mutate(value = as.numeric(value))
 
@@ -895,26 +1394,39 @@ ggplot(df.box, aes(x = value, fill = key)) +
   theme(legend.position = "none",
         strip.text = element_text(size = 12, colour = "white"))
 
+
 ```
 
-There are many outliers in each features. It may affect the assumption of regression models and a non-parametric machine learning model that immune to outlier should be applied. 
+There are many outliers in each features. It may affect the assumption of regression models and a non-parametric machine learning model that immune to outlier should be applied. I am adopting a careful strategy. I will remove "outliers among outliers", which means the outliers that are too far away from the main group of outliers in respective variable. 
+
+I am removing 24 rows of outliers from the dataset, which is only 1.6% of the overall dataset. 
+
+```{r}
+cloth3 <- cloth3 %>% 
+  dplyr::filter(merchant_rating_count < 2000000,
+                price < 40,
+                retail_price < 250,
+                shipping_option_price < 10, 
+                units_sold < 25000) 
+  
+```
 
 
 #### 6.3.3 Relationship Curve
 
-* Relationship between 
+Following plots try to visualise the relationship between each explaining variables with the responding variable, "units_sold".
 
-```{r, fig.width=10, fig.height=10}
+```{r, fig.width=12, fig.height=8, warning=FALSE}
 
 df_rela <- cloth3 %>% 
-  select(is.numeric) %>% 
+  dplyr::select(is.numeric) %>% 
   gather(key = "key", value = "value", -units_sold) 
 
  
 ggplot(df_rela, aes(x = value, y = units_sold, colour = key)) +
   geom_point(alpha = 0.5) +
   facet_wrap(~key, scales = "free") +
-  theme_bw() +
+  theme_modern_rc() +
   theme(legend.position = "none",
         plot.title = element_text(face = "bold", size = 14, hjust = 0.5, vjust = 2),
         strip.text = element_text(size = 10)) +
@@ -925,7 +1437,7 @@ ggplot(df_rela, aes(x = value, y = units_sold, colour = key)) +
 
 ```
 
-The relationship between each predictors with the "units sold" (It can be understood as how well a product is sold) is complex. It is a rare situation where graphical transformation of data doesn't help much. I will apply inferential model later to help interpretation. 
+The relationship between each predictors with the "units sold" (It can be understood as how well a product is sold) is complex. I will apply inferential model later to help interpretation. 
 
 
 #### 6.3.3 Correlogram 
@@ -935,227 +1447,48 @@ This section is to check multicollinearity between numerical predictors. As a ru
 **Insights:**
 
 * "Shipping_option_price" and "price" has correlation higher than 0.80  
-* "retail_price" and "retail_price" has correlation higher than 0.80  
 
 
 ```{r, fig.width=10, fig.height=10}
 
 df_cor <- cloth3 %>% 
-  select(is.numeric)
+  dplyr::select(is.numeric)
 
 corrplot(cor(df_cor), method = "number", type = "upper")
 
 ```
-
-This feature selection will be handled in next section.
-
-
-### 6.3 Feature cleaning
-
-In this real dataset, pareto principle (80:20) is applied heavily, where in the categorical variables, most of the data are concentrated in certain levels and in a result, the remaining levels have insufficient for efficient modeling.
-
-This is happening to the "shipping_option_name", "product_variation_size_id", and "colour". Therefore I will try to group the level with less data into "other" category to help analysis. 
-
-
-**1. shipping_option_name**
-
-Examining the distribution of sample sizes:
-
 ```{r}
-
-cloth3 %>% 
-  select(shipping_option_name) %>% 
-  group_by(shipping_option_name) %>% 
-  summarise(count = n()) %>% 
-  arrange(desc(count)) %>% 
-  ungroup() %>% 
-  mutate(total = sum(count),
-         proportion = count/total) %>% 
-  kable(align = "c")
-
+names(cloth3)
 ```
 
-Keep only Livraison standard and group all other shipping option in "other_shipping". I will also remove the original shipping_option_name column.
-
-```{r}
-# The codes
-
-cloth3 <- cloth3 %>% 
-  mutate(shipping_option_name = as.character(shipping_option_name),
-         shipping_name = case_when(shipping_option_name != "Livraison standard" ~ "Other_shipping",
-                                           TRUE ~ shipping_option_name),
-         shipping_name = as.factor(shipping_name)) %>% 
-  dplyr::select(-shipping_option_name)
-
-# The result
-
-cloth3 %>% 
-  select(shipping_name) %>% 
-  group_by(shipping_name) %>% 
-  summarise(count = n()) %>% 
-  arrange(desc(count)) %>% 
-  ungroup() %>% 
-  mutate(total = sum(count),
-         proportion = count/total) %>% 
-  kable(align = "c")
-```
-
-**2. product_variation_size_id**
-
-Examine the sample size of each level:  
-
-```{r}
-
-cloth3 %>% 
-  select(product_variation_size_id ) %>% 
-  group_by(product_variation_size_id ) %>% 
-  summarise(count = n()) %>% 
-  arrange(desc(count)) %>% 
-  ungroup() %>% 
-  mutate(total = sum(count),
-         proportion_percentage = count/total * 100) %>% 
-  kable(align = "c")
-
-```
-
-
-* I will keep only S, XS, M, XXS, L, XXL, and XL, they contribute roughly 90% of to the dataset, and grouping the rest of the levels into "other size"
-
-
-```{r}
-
-# The codes
-
-cloth3 <- cloth3 %>% 
-  mutate(product_variation_size_id = as.character(product_variation_size_id),
-         product_sizes = case_when(product_variation_size_id == "S" ~ "S",
-                                   product_variation_size_id == "XS" ~ "XS",
-                                   product_variation_size_id == "M" ~ "M",
-                                   product_variation_size_id == "XXS" ~ "XXS",
-                                   product_variation_size_id == "L" ~ "L",
-                                   product_variation_size_id == "XXL" ~ "XXL",
-                                   product_variation_size_id == "X" ~ "X",
-                                           TRUE ~ "Other_sizes"),
-         product_sizes = as.factor(product_sizes)) %>% 
-  dplyr::select(-product_variation_size_id)
-
-# Checking
-
-cloth3 %>% 
-  select(product_sizes) %>% 
-  group_by(product_sizes) %>% 
-  summarise(count = n()) %>% 
-  arrange(desc(count)) %>% 
-  ungroup() %>% 
-  mutate(total = sum(count),
-         proportion_percentage = count/total * 100) %>% 
-  kable(align = "c")
-
-```
-
-**3. product_color**
-
-Lastly, I apply the same technique to "product_color". Examine the sample sizes of its levels:
-
-```{r}
-
-cloth3 %>% 
-  select(product_color) %>% 
-  group_by(product_color) %>% 
-  summarise(count = n()) %>% 
-  arrange(desc(count)) %>% 
-  ungroup() %>% 
-  mutate(total = sum(count),
-         proportion_percentage = count/total * 100) %>% 
-  kable(align = "c")
-
-
-```
-
-In this color feature, I am keeping to top 10 colours that have dominating samples size, and grouping the rest of the colour into "other colors".
-
-```{r}
-
- cloth3 <- cloth3 %>% 
-  mutate(product_color = as.character(product_color),
-         product_colors = case_when(product_color == "black" ~ "black",
-                                   product_color == "white" ~ "white",
-                                   product_color == "pink" ~ "pink",
-                                   product_color == "blue" ~ "blue",
-                                   product_color == "yellow" ~ "yellow",
-                                   product_color == "red" ~ "red",
-                                   product_color == "green" ~ "green",
-                                   product_color == "grey" ~ "grey",
-                                   product_color == "purple" ~ "purple",
-                                   product_color == "armygreen" ~ "armygreen",
-                                           TRUE ~ "Other_colors"),
-         product_colors = as.factor(product_colors)) %>% 
-  dplyr::select(-product_color)
-
-
-cloth3 %>% 
-  select(product_colors) %>% 
-  group_by(product_colors) %>% 
-  summarise(count = n()) %>% 
-  arrange(desc(count)) %>% 
-  ungroup() %>% 
-  mutate(total = sum(count),
-         proportion_percentage = count/total * 100) %>% 
-  kable(align = "c")
-
-```
 
 
 
 ### 6.4 Multiple Linear Regression
 
+
 ```{r}
-model_mlr <- lm(units_sold ~., data = cloth3)
+names(cloth3)
+```
+
+
+```{r}
+
+model_mlr <- lm(units_sold ~ ., data = cloth3)
 
 summary(model_mlr) 
 
 ```
 
 
+
+
 ```{r}
-library(MASS)
-
-model_step <- train(units_sold ~., data = cloth3,
-                    method = "lmStepAIC",
-                    trControl = trainControl(method = "cv",
-                                             number = 10)) 
-
-model_step$finalModel
-
-summary(model_step)
+plot(model_mlr)
 ```
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## 7 Predictive Aanalysis
-
-The machine learning technique is to build models and choose the best one to predict *how well a product is going to sell*.
-
-
-```{r}
-model_mlr <- cloth3
-
-```
 
 
 
