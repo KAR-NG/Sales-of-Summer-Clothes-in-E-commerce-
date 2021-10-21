@@ -2,7 +2,7 @@
 
 *EDA + Text Mining + Inferential Model + Random Forest*
 
-
+Solve 9 analysis tasks and indentified the most important variables in driving the success of clothes sales. Achieved via 22 plots, multiple linear regression and random forest
 
 
 ![pic2_thumbnail](https://user-images.githubusercontent.com/81752452/138210071-cf73f342-c673-43cb-be59-bf4e2862150a.png)
