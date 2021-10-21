@@ -17,9 +17,17 @@ always_allow_html: yes
 
 ***
 
+
+
+## 1 SUMMARY
+
+
+
+
+
                                   
 
-## 1 R Libraries
+## 2 R PACKAGES
 
 ```{r, warning=FALSE, message=FALSE}
 library(tidyverse)
@@ -47,7 +55,7 @@ options(scipen = 999)
 ```
 
 
-## 2 Introduction
+## 3 INTRODUCTION
 
 This project will analyse a public dataset on *Kaggle* website, named "Sales of Summer clothes in E-commerce Wish". As the name suggests, this dataset have information related to the sales of summer clothes on Wish.com. There are 43 columns of variables in the dataset including price, units_sold, rating, tags, colour, countries shipped to and etc.
 
@@ -67,11 +75,11 @@ This project will also study the statistical relationship between variables with
 
 
 
-## 3 Data Preparation
+## 4 DATA PREPARATION
 
 The dataset is downloaded from kaggle website, visit this [Link](https://www.kaggle.com/jmmvutu/summer-products-and-sales-in-ecommerce-wish/tasks?taskId=1617) 
 
-### 3.1 Data Importation
+### 4.1 Data Importation
 
 ```{r}
 cloth <- read_csv("summer.csv")
@@ -79,7 +87,7 @@ cloth <- read_csv("summer.csv")
 ```
 
 
-### 3.2 Data Description
+### 4.2 Data Description
 
 
 ```{r}
@@ -139,7 +147,7 @@ data.frame(Variable, Description) %>%
 
 ```
 
-### 3.3 Data Exploration
+### 4.3 Data Exploration
 
 The dataset has 1,573 rows of observation and 43 columns of variables. Variables are currently categorised into 2 types, which are character and numeric. 
 
@@ -196,9 +204,9 @@ summary(c$crawl_month)
 
 ```
 
-## 4 Data Cleaning
+## 5 DATA CLEANING
 
-### 4.1 Remove variables
+### 5.1 Remove variables
 
 This section removes variables that have been previously identified to be redundant or irrelevant to this project.  
 
@@ -229,7 +237,7 @@ cloth2 <- cloth %>%
 I will assess the remaining variables in the dataset in later stage and would remove them if required.
 
 
-### 4.2 Remove missing values
+### 5.2 Remove missing values
 
 This section removes 116 rows of data, which is 7.37% of the overall dataset. The dataset drops from 1573 rows of data to 1457. 
 
@@ -244,7 +252,7 @@ cloth2 <- na.omit(cloth2)
 There are ways to manage missing values such as imputation using mean, median, or using imputation models from the R's caret package. However, I removed the missing values instead of imputating them just to make this project simpler. Additionally, only 7.37% of data is removed, and I still have 92.63% (1457 rows) of data for this analysis. 
 
 
-### 4.3 Factor conversion
+### 5.3 Factor conversion
 
 This section converts character variables and several numerical variables into factor. 
 
@@ -264,7 +272,7 @@ cloth2 <- cloth2 %>%
 ```
 
 
-### 4.4 Typos in the factor variables
+### 5.4 Typos in the factor variables
 
 This section checks typos in the factor variables. I have identified many typos in following variables. 
 
@@ -369,7 +377,7 @@ summary(cloth2$origin_country)
 ```
 
 
-### 4.5 Examining the Rating
+### 5.5 Examining the Rating
 
 There are 5 columns for different counts of rating from rating 1 to rating 5. There is also a "rating_count" representing the total number of rates received. In the aim of analysis of this project, I do not need all these columns because there is already one "rating" column that indicates the overall rating.
 
@@ -389,7 +397,7 @@ cloth2 <- cloth2 %>% dplyr::select(-rating_count, -rating_five_count, -rating_fo
 
 ```
 
-### 4.6 New Metric: price_drop
+### 5.6 New Metric: price_drop
 
 The "price" in the dataset is the price that an item will be sold at, whereas "retail_price" is a reference price or regular price in the overall market and is generally higher than the "price" column. Both will be shown on the product listing page for marketing purposes.
 
@@ -413,7 +421,7 @@ summary(cloth2$price_drop)
 
 ```
 
-### 4.6 New Metric: discount_per
+### 5.7 New Metric: discount_per
 
 Based on the newly created "price_drop", a discount percentage "discount_per" is synthesised to act as an another column to help to study the effect of price dropped on sales. 
 
@@ -436,7 +444,7 @@ summary(cloth2$discount_per)
 Why don't we use price_drop instead? Because produces are sold at different prices, the sample sizes of expensive products are different than the products at cheaper prices. Creating a discount percentage columne (discount_per) will aid to "scale down" the value by grouping to make our observation easier (Hopefully).
  
 
-### 4.7 New Metric: price_class
+### 5.8 New Metric: price_class
 
 It can be useful to create classes for different prices. Based on the dataset, the price ranges from 0 to 50. 
 
@@ -461,9 +469,9 @@ levels(cloth2$price_class)
 ```
 
 
-## 5 Visualisation
+## 6 VISUALISATION
 
-### 5.1 Validated! Human sensitive to price drops
+### 6.1 Validated! Human sensitive to price drops
 
 This section answers the first task - **How about trying to validate the established idea of human sensitiveness to price drops?**
 
@@ -528,7 +536,7 @@ To explain why discount rate at "0%" has the highest items sold, it is because t
 
 
 
-### 5.2 Typical top product categories 
+### 6.2 Typical top product categories 
 
 Second task of this project: **Look for top categories of products so that you know what sells best.**
 
@@ -631,7 +639,7 @@ size_df %>%
 ```
 
 
-### 5.3 The Effect of Rating on Sales
+### 6.3 The Effect of Rating on Sales
 
 The third analysis task: **Do bad products sell ? How about the relationship between the quality of a product (ratings) and its success ? Does the price factor into this ?**
 
@@ -659,7 +667,7 @@ p5
 
 
 
-### 5.4 Logarithmically graphing the Fame
+### 6.4 Logarithmically graphing the Fame
 
 The fourth task: **Do seller's fame factor into top products?**
 
@@ -718,7 +726,7 @@ mypatch +
 * Therefore, sales will increase with the popularity of a merchant as specified by the logarithmic plot. 
 
 
-### 5.5 The Number of Tags in produce success
+### 6.5 The Number of Tags in produce success
 
 
 The fifth question: **Do the number of tags (making a product more discoverable) factor into the success of a product ?**
@@ -767,7 +775,7 @@ Tags is required to drive product success but not absolute.
 * Most products have 25 tags. 
 
 
-### 5.6 EXTRA: Which text has the most sales?
+### 6.6 EXTRA: Which text has the most sales?
 
 In term of total number of products sold, top 50 words out of 1,838 that used as tags are: 
 
@@ -847,7 +855,7 @@ d2 %>%
 
 
 
-### 5.7 EXTRA: Text Mining
+### 6.7 EXTRA: Text Mining
 
 Following table shows the frequency of words that has been used for at least 100 times in the entire dataset.
 
@@ -1036,7 +1044,7 @@ word_cor <- df5.6 %>%
 ```
 
 
-### 5.8 EXTRA: Badges and Product Success 
+### 6.8 EXTRA: Badges and Product Success 
 
 There are 3 interesting badges in the dataset that could be useful in explaining the popularity of a product.
 
@@ -1083,7 +1091,7 @@ ggplot(df5.7, aes(x = badge_type, y = units_sold, fill = result)) +
 * Good quality produce has higher units sold. 
 
 
-### 5.9 EXTRA: Advertisement Boost and Product Success 
+### 6.9 EXTRA: Advertisement Boost and Product Success 
 
 Following plot shows that advertisement boost does not affect the success of a product.
 
@@ -1152,16 +1160,16 @@ ggplot(df5.8.2, aes(x = uses_ad_boosts, y = total_unit_sold, colour = uses_ad_bo
 
 
 
-## 6 Staitistcal Analysis
+## 7 STATISTICAL ANALYSIS
 
 This section will start to evaluate the statistical relationship between *how well a product is sold* with all other relevant variables. This information is stored within the feature "units_sold".
 
 
-### 6.1 Feature Selection
+### 7.1 Feature Selection
 
 **Primary Addition**
 
-The number of tags in relation to the number of each product sold will be very interesting to include. This value can be attracted from the "tags" column that has a massive amount of text describing relevant tags. This extraction *has been done* in section 5.5. Here, I will just add the extracted column into the current dataset. 
+The number of tags in relation to the number of each product sold will be very interesting to include. This value can be extracted from the "tags" column that has a massive amount of texts describing relevant tags. This extraction *has been done* in section 5.5. Here, I will just add the extracted column into the current dataset. 
 
 ```{r}
 cloth2 <- cloth2 %>% 
@@ -1172,14 +1180,20 @@ cloth2 <- cloth2 %>%
 
 **Primary Removal**
 
-Removing variables that are irrelevant to this analysis based on my domain knowledge. I will based on the characteristics of features, for examples (1) if there are too many missing values in that column (I have done it during data cleaning), (2) The data in the column do not help in categorising the data, for example if a variable is having non-repeated unique values in the entire column like a "ID" or "Name", (3) The columns that are redundant or basically irrelevant to the predictive objective.  
+Removing variables that are irrelevant to this analysis based on my domain knowledge. I will based on the characteristics of features, for examples,
+
+* (1) If there are too many missing values in that column (I have removed all missing values during data cleaning and so there would not be variables with missing values), 
+
+* (2) The data in the column do not help in categorising the dataset, for example if a variable is having non-repeated unique values in the entire column like a "ID" or "Name", it will harm the statistical analysis and create biased outcome in regression analysis,  
+
+* (3) The columns that are redundant or basically irrelevant to the statistical analysis  
 
 Variables I am removing include:
 
-* title_orig  
-* price_drop
-* discount_per
-* tags  
+* title_orig   
+* price_drop  
+* discount_per  
+* tags    
 * merchant_title   
 * merchant_name  
 * merchant_info_subtitle  
@@ -1192,9 +1206,11 @@ cloth3 <- cloth2 %>% dplyr::select(-title_orig, -price_drop, -discount_per, -tag
 ```
 
 
-### 6.3 Feature cleaning
+### 7.2 Feature cleaning
 
-There are too many levels for important factor variables such as  "shipping_option_name", "product_variation_size_id", and "colour" and which may make the statistical analysis too long and complex to interpret. Therefore, I will try to group the level with less data into a variable named "other" to help analysis. 
+There are too many levels in some important factor variables such as  "shipping_option_name", "product_variation_size_id", and "colour". These high amount of levels may make the statistical analysis too long and complex to interpret. Therefore, I will try to group the level with less data into a variable named "other" to help analysis. 
+
+Please note that for the simplicity of this project, I will just group lesser amount of levels together without assessing the distribution of them. Distribution plots such as histogram or boxplot are often used to study the distribution of these infrequently occurred levels, the best approach is to group only infrequently appear levels with similar distribution. 
 
 
 **1. shipping_option_name**
@@ -1215,7 +1231,7 @@ cloth3 %>%
 
 ```
 
-Keep only Livraison standard and group all other shipping option in "other_shipping". I will also remove the original shipping_option_name column.
+I will group all other shipping options other than "Livraison standard" into a new level called  "other_shipping". 
 
 ```{r}
 # The codes
@@ -1238,6 +1254,7 @@ cloth3 %>%
   mutate(total = sum(count),
          proportion = count/total) %>% 
   kable(align = "c")
+
 ```
 
 **2. product_variation_size_id**
@@ -1259,7 +1276,7 @@ cloth3 %>%
 ```
 
 
-* I will keep only S, XS, M, XXS, L, XXL, and XL, they contribute roughly 90% of to the dataset, and grouping the rest of the levels into "other size"
+* I will keep only S, XS, M, XXS, L, XXL, and XL, they contribute roughly 90% of to the dataset, and grouping the rest of the levels into a new level called "other size".
 
 
 ```{r}
@@ -1312,7 +1329,7 @@ cloth3 %>%
 
 ```
 
-In this color feature, I am keeping to top 10 colours that have dominating samples size, and grouping the rest of the colour into "other colors".
+In this colour variable, I am keeping the top 10 colours that have dominating samples sizes, and grouping the remaining colours into "other colors".
 
 ```{r}
 
@@ -1350,9 +1367,9 @@ cloth3 %>%
 
 
 
-### 6.2 EDA
+### 7.3 EDA
 
-#### 6.2.1 Histogram
+#### 7.3.1 Histogram
 
 Following histogram looks for the trends of all numerical variables.
 
@@ -1378,7 +1395,7 @@ ggplot(df.his, aes(x = value, fill = key)) +
 
 *Insights*
 
-* Identify that *badge_fast_shipping*, *badge_local_product*, *badge_product_quality*, *merchant_has_profile_picture*, *uses_ad_boosts*, and *shipping_is_express* are binary variable and should be converted to factor. 
+* Identified that *badge_fast_shipping*, *badge_local_product*, *badge_product_quality*, *merchant_has_profile_picture*, *uses_ad_boosts*, and *shipping_is_express* are binary variable and should be converted into factor. 
 
 ```{r}
 cloth3 <- cloth3 %>% 
@@ -1391,7 +1408,7 @@ cloth3 <- cloth3 %>%
 
 ```
 
-* *inventory_total* is a numerical variable with only single value of 50, information gaining from this variable in relation to the number of product soil will be limited. Therefore, this variable should be removed.
+* *inventory_total* is a numerical variable with only single value of 50, information gaining from this variable in relation to the number of product sold will be limited. Therefore, this variable should be removed.
 
 ```{r}
 cloth3 <- cloth3 %>% dplyr::select(-inventory_total)
@@ -1436,7 +1453,7 @@ It is important to note that "Other_colors" in the graph of "product_color" is a
 
 
 
-#### 6.2.2 Boxplot
+#### 7.3.2 Boxplot
 
 Applying boxplot to visualise the existence of outliers and how are data distributed in the form of box plot in each feature.  
 
@@ -1476,7 +1493,7 @@ cloth3 <- cloth3 %>%
 ```
 
 
-#### 6.3.3 Relationship Curve
+#### 7.3.3 Relationship Curve
 
 Following plots try to visualise the relationship between each explaining variables with the responding variable, "units_sold".
 
@@ -1504,13 +1521,11 @@ ggplot(df_rela, aes(x = value, y = units_sold, colour = key)) +
 The relationship between each predictors with the "units sold" (It can be understood as how well a product is sold) is complex. I will apply inferential model later to help interpretation. 
 
 
-#### 6.3.3 Correlogram 
+#### 7.3.4 Correlogram 
 
-This section is to check multicollinearity between numerical predictors. As a rule of thumb, the pair of predictors with correlation above 0.8 should have one removed among the both to avoid multicollinearity problem. If it is not done, the standard errors of coefficients estimates during regression analysis will be inflated, and may affect the accuracy of respective P-values. I will also apply VIF to support the decisions made in this correlogram. 
+This section checks multicollinearity between numerical predictors. As a rule of thumb, the pair of predictors with correlation above 0.8 should have one removed among the both to avoid multicollinearity problem. Otherwise, the standard errors of coefficients estimates during regression analysis will be inflated, and may affect the accuracy of respective P-values. 
 
-**Insights:**
-
-* "Shipping_option_price" and "price" has correlation higher than 0.80  
+Identified that "Shipping_option_price" and "price" has correlation higher than 0.80.  
 
 
 ```{r, fig.width=10, fig.height=10}
@@ -1523,22 +1538,21 @@ corrplot(cor(df_cor), method = "number", type = "upper")
 ```
 
 
+### 7.4 Multiple Linear Regression
 
+I found that there are several cleaning tasks I missed, which are:
 
-### 6.4 Multiple Linear Regression
+* Converting *"shipping_option_price"* from double into factor. It has discrete numeric ranking from 1 to 7, instead of floating prices. 
 
-Before starting the very first preliminary model, I have found that there are several cleaning tasks that I missed, which are:
+* The *"merchant_rating_count"* is not required in this analysis. There is a relevant column *”merchant_rating“* already which better describes the rating of each merchant.
 
-* Converting *shipping_option_price* from double into factor. It has discrete numeric ranking from 1 to 7, instead of floating prices. 
+* Removing *"shipping_is_express"*, there is only 1 item was shipped in expressed, and remaining 1432 (99.9%) are not shipped in expressed. There is not enough samples to effect of studying the effect of expressed shipping on the number of units sold for each item. 
 
-* *"merchant_rating_count"* is not required in this analysis. There is a relevant column *”merchant_rating“* already which better describes the rating of each merchant.
+* Removing *"price_class"* as it seems not directly related to product sold. I am more interested in the relation between column of "price" and the outcome variable. 
 
-* Removing *shipping_is_express*, there is only 1 item was shipped in expressed, and remaining 1432 (99.9%) are not shipped in expressed. There is not enough samples to effect of studying the effect of expressed shipping on the number of units sold for each item. 
-* Removing *price_class* as it seems not directly related to product sold. I have more interested in the relation between column of "price" and the outcome variable. 
+* Removing *"origin_country"*, there is no information in the description table stating further detail of this column. Furthermore, 96% of data in this column is dominated by China, and the rest of the countries have not enough sample size to study their effects on the number of product sold for each product type. 
 
-* Removing *origin_country*, there is no information in the description table stating further detail of this column. Furthermore, 96% of data in this column is dominated by China, and the rest of the countries have not enough sample size to study their effects on the number of product sold for each product type. 
-
-* Removing *shipping_option_price* because it is correlated with the column "price" at a level that multicollinearity can be a issue.
+* Removing *"shipping_option_price"* because it is correlated with the column "price" at a level that multicollinearity can be a issue.
 
 
 ```{r}
@@ -1567,11 +1581,7 @@ test.data <- cloth3[-training.set, ]
 
 ```
 
-
-```{r}
-summary(train.data)
-
-```
+Build the model.
 
 ```{r}
 
@@ -1581,11 +1591,13 @@ summary(model_mlr)
 
 ```
 
-Based on statistical summary from the multiple linear regression model, the p-value of the F-statistics is less than 0.05. which indicates that at least 1 predictor variable is statistical significant. The adjusted R-squared is extremely low at only 8.7% of the variability of the y variable can be explained by this model, it indicates that it is a bad model if one wants to use it for prediction. The variability of predictions (95% Prediction interval) that this model can supply is very large and therefore affecting the precision of these predictions.  
+Based on statistical summary from the multiple linear regression model, the p-value of the F-statistics is less than 0.05. which indicates that at least 1 predictor variable is statistical significant. The adjusted R-squared is extremely low at only 8.7%. Adjusted R-Squared is used instead of the multiple R-Squared because adjusted one will penalise the R-squared whenever each variable is added, it is the nature of this metrics that regardless whether the added variables have significant relation to the outcome variable, the R-squared will always increase.
+
+Both type of R-squared measure the proportion of variability of the y variable that can be explained by this model. Such low adjusted R-squared indicates that it is a bad model if one wants to use it for prediction because the variability of predictions (95% Prediction interval) that this model can make is very large and therefore affecting the precision of these predictions.  
 
 Despite the low adjusted R-squared, there are significant trends. These associated predictors still provide information about the responding variable (unit_sold). It is important to know that even though R-squared is low, low P values will still indicate the true relationship between associated predictors and the responding variable.  
 
-Extracting the data frame that contains the coefficient estimates and p-values from the model. Statistically related features (variables) are:
+Extracting the coefficient estimates and p-values from the model. Statistically related features (variables) are:
 
 ```{r}
 
@@ -1608,7 +1620,7 @@ df6.4
   
 ```
 
-Visualise the statistics that only shows variables that are significantly related to units_sold.
+Visualise these statistics:
 
 ```{r, fig.width=12, fig.height=6, warning=FALSE}
 
@@ -1635,17 +1647,21 @@ Visualise the statistics that only shows variables that are significantly relate
 
 *Insights*
 
-Surprisingly, price did not affect the number of sales significantly. I can see that the rating of merchant, product, and if product has profile picture significant affect the number of units sold for a type of product positively. The more inventory the seller has will also affect the number of unit sold by the seller positively, while keeping other variables constant. 
+* Surprisingly, price did not affect the number of sales significantly. 
 
-Negatively related variables are countries shipped to, product size XS and XXS. The higher the amount of these products, while keeping other variables constant.
+* I can see that the rating of merchant, rating of product, and whether the product has profile picture significantly affects the number of units sold positively.
+
+* The more inventory the seller has will also affect the number of unit sold by the seller positively, while keeping other variables constant. 
+
+* Negatively related variables are countries shipped to, product size XS and XXS. The higher the amount of these products, while keeping other variables constant.
 
 In the next two section, I will compare this result with other model.
 
 
 
-### 6.5 Random Forest's Important Plot
+### 7.5 Random Forest's Important Plot
 
-Applying a random forest important plot and shown similar results. Many top important variables indicated by random forest model are also indicated by the previous multiple linear regression model.
+Applying a random forest "important plot", this is a plot to tell which variables are important to units_sold. 
 
 ```{r}
 
@@ -1656,7 +1672,7 @@ model_rf <- train(units_sold ~., data = train.data,
 
 ```
 
-Code the plot.
+The plot shown Similar results. Many significant variables indicated by random forest model are also indicated by the previous multiple linear regression model.
 
 ```{r, fig.height=8}
 
@@ -1665,25 +1681,51 @@ plot(varImp(model_rf))
 ```
  
 
+## 8 CONCLUSION
+
+
+From the dataset of the sales of summer clothes in E-commerce Wish, Following are conclusions found. 
+
+* The higher the magnitude of prices being dropped, the better the sales of a product. The best range of price drops fall between 75% to 100%.
+  
+* Among 87 colours, the top 5 best selling cloth colours are black, white, grey, purple, and blue, and they account for 25%, 17%, 7%, 5%, and 5% of the total units sold. 
+
+* Among 63 sizes category, the top 5 best-selling cloth sizes are S, M, XS, L and XXS, and they account for 49%, 22%, 14%, 5%, and 3% of the total units sold. 
+
+* A product needs to have a rating of above 3 to ensure sales and popularity.
+
+* The fame of a merchant is very important in driving product sales, and the relationship is exponential in logarithmic transformed plot.
+
+* Most products have 25 tags and the best selling products have a wide range of tags from approximately 25 to 125 tags. 
+
+* There are 1838 of words used in tags, 
+
+  * The top 10 best-selling words are fashion, women's, women, summer, casual, sleeveless, tops, sexy, size, and dress.
+
+  * The top 10 worse-selling words are summertshirt, butterflyprintskirt, dressesforwomensummer, icesilk, antifoggoggle, beds, char, sushionbed, divingequipment, and divingmask. 
+
+* Based on the 1838 of words used in tags, the top 10 most popular words by merchants are fashion, summer, women's, women, casual, size, sleeveless, dress, tops, and shorts.
+
+  * In term of popularity among merchants, "fashion", "women's", and "women" are often used together.
+
+  * In term of product sales, "fashion", "women's", and "women" are also often used together.
+
+* Fast shipping badge and local product badges won't help in driving product success, whereas product quality badge helps driving product success.
+
+* Advertisement boost did not affect the success of a product. More units were sold without advertisement boost.
+
+* Significant variables (p-value < 0.05) that has positive relationship with sales are the (1) the rating of merchant, (2) rating of product, (3) the product has profile picture, and (4) Inventory the seller has。
+
+*  Significant variables (p-value < 0.05) that affect the sales negatively are the number of countries shipped to, product size XS, and XXS.
 
 
 
+## 9 LEGALITY
+
+This project is created for skills demonstration Only. 
 
 
-
-## 7 CONCLUSION
-
-
-
-
-
-
-## 8 Legality
-
-This project is created for skills demonstration and learning Only. 
-
-
-## 9 Reference
+## 10 REFERENCE
 
 https://www.kaggle.com/jmmvutu/summer-products-and-sales-in-ecommerce-wish
 
