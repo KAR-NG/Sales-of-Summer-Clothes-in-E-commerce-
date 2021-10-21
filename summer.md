@@ -46,8 +46,11 @@ Kar Ng
         -   [6.3.3 Relationship Curve](#633-relationship-curve)
         -   [6.3.3 Correlogram](#633-correlogram)
     -   [6.4 Multiple Linear Regression](#64-multiple-linear-regression)
--   [Legality](#legality)
--   [Reference](#reference)
+    -   [6.5 Random Forest’s Important
+        Plot](#65-random-forests-important-plot)
+-   [7 CONCLUSION](#7-conclusion)
+-   [8 Legality](#8-legality)
+-   [9 Reference](#9-reference)
 
 ------------------------------------------------------------------------
 
@@ -60,7 +63,6 @@ library(tidyverse)
 library(kableExtra)
 library(skimr)
 library(lubridate)
-library(hrbrthemes)
 library(hrbrthemes)
 library(tidytext)
 library(ggExtra)
@@ -84,11 +86,11 @@ options(scipen = 999)
 
 This project will analyse a public dataset on *Kaggle* website, named
 “Sales of Summer clothes in E-commerce Wish”. As the name suggests, this
-dataset will include information related to the sales of summer clothes
-on Wish. There are 43 columns of variables in the dataset including
+dataset have information related to the sales of summer clothes on
+Wish.com. There are 43 columns of variables in the dataset including
 price, units\_sold, rating, tags, colour, countries shipped to and etc.
 
-A series of tasks that this project will answer include:
+A series of tasks this project will answer include:
 
 -   How about trying to validate the established idea of human
     sensitiveness to price drops ?
@@ -105,16 +107,13 @@ A series of tasks that this project will answer include:
 -   Do the number of tags (making a product more discoverable) factor
     into the success of a product ?
 
-Two popular data analysis techniques will be applied - exploratory data
-analysis and machine learning. The machine learning technique is to
-build models and choose the best one to predict *how well a product is
-going to sell*.
+This project will also study the statistical relationship between
+variables with the success of a product in the term of units sold.
 
 ## 3 Data Preparation
 
 The dataset is downloaded from kaggle website, visit this
 [Link](https://www.kaggle.com/jmmvutu/summer-products-and-sales-in-ecommerce-wish/tasks?taskId=1617)
-and uploaded to R to complete the analysis.
 
 ### 3.1 Data Importation
 
@@ -143,44 +142,44 @@ Description <- c("Title for localized for european countries. May be the same as
                  "Price you would pay to get the product.",
                  "Reference price for similar articles on the market, or in other stores/places. Used by the seller to indicate a regular value or the price before discount.",
                  "Currency of the prices.",
-                 "Number of units sold. Lower bound approximation by steps",
-                 "Whether the seller paid to boost his product within the platform (highlighting, better placement or whatever)",
+                 "Number of units sold. Lower bound approximation by steps.",
+                 "Whether the seller paid to boost his product within the platform (highlighting, better placement or whatever).",
                  "Mean product rating.",
-                 "Total number of ratings of the product",
-                 "Number of 5-star ratings",
-                 "Number of 4-star ratings",
-                 "Number of 3-star ratings",
-                 "Number of 2-star ratings",                 
-                 "Number of 1-star ratings",
-                 "Number of badges the product or the seller have",
-                 "A badge that denotes the product is a local product. Conditions may vary (being produced locally, or something else). Some people may prefer buying local products rather than. 1 means Yes, has the badge",
-                 "Badge awarded when many buyers consistently gave good evaluations. 1 means Yes, has the badge",
-                 "Badge awarded when this product's order is consistently shipped rapidly",
-                 "tags set by the seller",
-                 "Product's main color",
-                 "One of the available size variation for this product",
-                 "Inventory the seller has. Max allowed quantity is 50",
-                 "shipping_option_name",
-                 "shipping price",
-                 "whether the shipping is express or not. 1 for True",
-                 "Number of countries this product is shipped to. Sellers may choose to limit where they ship a product to",
-                 "Total inventory for all the product's variations (size/color variations for instance)",
-                 "Whether there was an urgency banner with an urgency",
+                 "Total number of ratings of the product.",
+                 "Number of 5-star ratings.",
+                 "Number of 4-star ratings.",
+                 "Number of 3-star ratings.",
+                 "Number of 2-star ratings.",                 
+                 "Number of 1-star ratings.",
+                 "Number of badges the product or the seller have.",
+                 "A badge that denotes the product is a local product. Conditions may vary (being produced locally, or something else). Some people may prefer buying local products rather than. 1 means Yes, has the badge.",
+                 "Badge awarded when many buyers consistently gave good evaluations. 1 means Yes, has the badge.",
+                 "Badge awarded when this product's order is consistently shipped rapidly.",
+                 "tags set by the seller.",
+                 "Product's main color.",
+                 "One of the available size variation for this product.",
+                 "Inventory the seller has. Max allowed quantity is 50.",
+                 "Shipping_option_name.",
+                 "Shipping price.",
+                 "Whether the shipping is express or not. 1 for True.",
+                 "Number of countries this product is shipped to. Sellers may choose to limit where they ship a product to.",
+                 "Total inventory for all the product's variations (size/color variations for instance).",
+                 "Whether there was an urgency banner with an urgency.",
                  "A text banner that appear over some products in the search results.",
-                 "origin_country",
-                 "Merchant's displayed name (show in the UI as the seller's shop name)",
-                 "Merchant's canonical name. A name not shown publicly. Used by the website under the hood as a canonical name. Easier to process since all lowercase without white space",
-                 "The subtitle text as shown on a seller's info section to the user. (raw, not preprocessed). The website shows this to the user to give an overview of the seller's stats to the user. Mostly consists of `% <positive_feedbacks> (<rating_count> reviews)` written in french",
-                 "Number of ratings of this seller",
-                 "merchant's rating",
-                 "merchant unique id",
-                 "Convenience boolean that says whether there is a `merchant_profile_picture` url",
-                 "Custom profile picture of the seller (if the seller has one). Empty otherwise",
-                 "url to the product page. You may need to login to access it",
-                 "Product_picture",
-                 "product identifier. You can use this key to remove duplicate entries if you're not interested in studying them.",
-                 "the search term used in the search bar of the website to get these search results.",
-                 "meta: for info only.")
+                 "Origin_country.",
+                 "Merchant's displayed name (show in the UI as the seller's shop name).",
+                 "Merchant's canonical name. A name not shown publicly. Used by the website under the hood as a canonical name. Easier to process since all lowercase without white space.",
+                 "The subtitle text as shown on a seller's info section to the user. (raw, not preprocessed). The website shows this to the user to give an overview of the seller's stats to the user. Mostly consists of `% <positive_feedbacks> (<rating_count> reviews)` written in french.",
+                 "Number of ratings of this seller.",
+                 "Merchant's rating.",
+                 "Merchant unique id.",
+                 "Convenience boolean that says whether there is a `merchant_profile_picture` url.",
+                 "Custom profile picture of the seller (if the seller has one). Empty otherwise.",
+                 "Url to the product page. You may need to login to access it.",
+                 "Product_picture.",
+                 "Product identifier. You can use this key to remove duplicate entries if you're not interested in studying them.",
+                 "The search term used in the search bar of the website to get these search results.",
+                 "Meta: for info only.")
 
 
 data.frame(Variable, Description) %>% 
@@ -251,7 +250,7 @@ Currency of the prices.
 units\_sold
 </td>
 <td style="text-align:left;">
-Number of units sold. Lower bound approximation by steps
+Number of units sold. Lower bound approximation by steps.
 </td>
 </tr>
 <tr>
@@ -260,7 +259,7 @@ uses\_ad\_boosts
 </td>
 <td style="text-align:left;">
 Whether the seller paid to boost his product within the platform
-(highlighting, better placement or whatever)
+(highlighting, better placement or whatever).
 </td>
 </tr>
 <tr>
@@ -276,7 +275,7 @@ Mean product rating.
 rating\_count
 </td>
 <td style="text-align:left;">
-Total number of ratings of the product
+Total number of ratings of the product.
 </td>
 </tr>
 <tr>
@@ -284,7 +283,7 @@ Total number of ratings of the product
 rating\_five\_count
 </td>
 <td style="text-align:left;">
-Number of 5-star ratings
+Number of 5-star ratings.
 </td>
 </tr>
 <tr>
@@ -292,7 +291,7 @@ Number of 5-star ratings
 rating\_four\_count
 </td>
 <td style="text-align:left;">
-Number of 4-star ratings
+Number of 4-star ratings.
 </td>
 </tr>
 <tr>
@@ -300,7 +299,7 @@ Number of 4-star ratings
 rating\_three\_count
 </td>
 <td style="text-align:left;">
-Number of 3-star ratings
+Number of 3-star ratings.
 </td>
 </tr>
 <tr>
@@ -308,7 +307,7 @@ Number of 3-star ratings
 rating\_two\_count
 </td>
 <td style="text-align:left;">
-Number of 2-star ratings
+Number of 2-star ratings.
 </td>
 </tr>
 <tr>
@@ -316,7 +315,7 @@ Number of 2-star ratings
 rating\_one\_count
 </td>
 <td style="text-align:left;">
-Number of 1-star ratings
+Number of 1-star ratings.
 </td>
 </tr>
 <tr>
@@ -324,7 +323,7 @@ Number of 1-star ratings
 badges\_count
 </td>
 <td style="text-align:left;">
-Number of badges the product or the seller have
+Number of badges the product or the seller have.
 </td>
 </tr>
 <tr>
@@ -334,7 +333,7 @@ badge\_local\_product
 <td style="text-align:left;">
 A badge that denotes the product is a local product. Conditions may vary
 (being produced locally, or something else). Some people may prefer
-buying local products rather than. 1 means Yes, has the badge
+buying local products rather than. 1 means Yes, has the badge.
 </td>
 </tr>
 <tr>
@@ -343,7 +342,7 @@ badge\_product\_quality
 </td>
 <td style="text-align:left;">
 Badge awarded when many buyers consistently gave good evaluations. 1
-means Yes, has the badge
+means Yes, has the badge.
 </td>
 </tr>
 <tr>
@@ -351,7 +350,7 @@ means Yes, has the badge
 badge\_fast\_shipping
 </td>
 <td style="text-align:left;">
-Badge awarded when this product’s order is consistently shipped rapidly
+Badge awarded when this product’s order is consistently shipped rapidly.
 </td>
 </tr>
 <tr>
@@ -359,7 +358,7 @@ Badge awarded when this product’s order is consistently shipped rapidly
 tags
 </td>
 <td style="text-align:left;">
-tags set by the seller
+tags set by the seller.
 </td>
 </tr>
 <tr>
@@ -367,7 +366,7 @@ tags set by the seller
 product\_color
 </td>
 <td style="text-align:left;">
-Product’s main color
+Product’s main color.
 </td>
 </tr>
 <tr>
@@ -375,7 +374,7 @@ Product’s main color
 product\_variation\_size\_id
 </td>
 <td style="text-align:left;">
-One of the available size variation for this product
+One of the available size variation for this product.
 </td>
 </tr>
 <tr>
@@ -383,7 +382,7 @@ One of the available size variation for this product
 product\_variation\_inventory
 </td>
 <td style="text-align:left;">
-Inventory the seller has. Max allowed quantity is 50
+Inventory the seller has. Max allowed quantity is 50.
 </td>
 </tr>
 <tr>
@@ -391,7 +390,7 @@ Inventory the seller has. Max allowed quantity is 50
 shipping\_option\_name
 </td>
 <td style="text-align:left;">
-shipping\_option\_name
+Shipping\_option\_name.
 </td>
 </tr>
 <tr>
@@ -399,7 +398,7 @@ shipping\_option\_name
 shipping\_option\_price
 </td>
 <td style="text-align:left;">
-shipping price
+Shipping price.
 </td>
 </tr>
 <tr>
@@ -407,7 +406,7 @@ shipping price
 shipping\_is\_express
 </td>
 <td style="text-align:left;">
-whether the shipping is express or not. 1 for True
+Whether the shipping is express or not. 1 for True.
 </td>
 </tr>
 <tr>
@@ -416,7 +415,7 @@ countries\_shipped\_to
 </td>
 <td style="text-align:left;">
 Number of countries this product is shipped to. Sellers may choose to
-limit where they ship a product to
+limit where they ship a product to.
 </td>
 </tr>
 <tr>
@@ -425,7 +424,7 @@ inventory\_total
 </td>
 <td style="text-align:left;">
 Total inventory for all the product’s variations (size/color variations
-for instance)
+for instance).
 </td>
 </tr>
 <tr>
@@ -433,7 +432,7 @@ for instance)
 has\_urgency\_banner
 </td>
 <td style="text-align:left;">
-Whether there was an urgency banner with an urgency
+Whether there was an urgency banner with an urgency.
 </td>
 </tr>
 <tr>
@@ -449,7 +448,7 @@ A text banner that appear over some products in the search results.
 origin\_country
 </td>
 <td style="text-align:left;">
-origin\_country
+Origin\_country.
 </td>
 </tr>
 <tr>
@@ -457,7 +456,7 @@ origin\_country
 merchant\_title
 </td>
 <td style="text-align:left;">
-Merchant’s displayed name (show in the UI as the seller’s shop name)
+Merchant’s displayed name (show in the UI as the seller’s shop name).
 </td>
 </tr>
 <tr>
@@ -467,7 +466,7 @@ merchant\_name
 <td style="text-align:left;">
 Merchant’s canonical name. A name not shown publicly. Used by the
 website under the hood as a canonical name. Easier to process since all
-lowercase without white space
+lowercase without white space.
 </td>
 </tr>
 <tr>
@@ -479,7 +478,7 @@ The subtitle text as shown on a seller’s info section to the user. (raw,
 not preprocessed). The website shows this to the user to give an
 overview of the seller’s stats to the user. Mostly consists of
 `% &lt;positive_feedbacks&gt; (&lt;rating_count&gt; reviews)` written in
-french
+french.
 </td>
 </tr>
 <tr>
@@ -487,7 +486,7 @@ french
 merchant\_rating\_count
 </td>
 <td style="text-align:left;">
-Number of ratings of this seller
+Number of ratings of this seller.
 </td>
 </tr>
 <tr>
@@ -495,7 +494,7 @@ Number of ratings of this seller
 merchant\_rating
 </td>
 <td style="text-align:left;">
-merchant’s rating
+Merchant’s rating.
 </td>
 </tr>
 <tr>
@@ -503,7 +502,7 @@ merchant’s rating
 merchant\_id
 </td>
 <td style="text-align:left;">
-merchant unique id
+Merchant unique id.
 </td>
 </tr>
 <tr>
@@ -512,7 +511,7 @@ merchant\_has\_profile\_picture
 </td>
 <td style="text-align:left;">
 Convenience boolean that says whether there is a
-`merchant_profile_picture` url
+`merchant_profile_picture` url.
 </td>
 </tr>
 <tr>
@@ -521,7 +520,7 @@ merchant\_profile\_picture
 </td>
 <td style="text-align:left;">
 Custom profile picture of the seller (if the seller has one). Empty
-otherwise
+otherwise.
 </td>
 </tr>
 <tr>
@@ -529,7 +528,7 @@ otherwise
 product\_url
 </td>
 <td style="text-align:left;">
-url to the product page. You may need to login to access it
+Url to the product page. You may need to login to access it.
 </td>
 </tr>
 <tr>
@@ -537,7 +536,7 @@ url to the product page. You may need to login to access it
 product\_picture
 </td>
 <td style="text-align:left;">
-Product\_picture
+Product\_picture.
 </td>
 </tr>
 <tr>
@@ -545,7 +544,7 @@ Product\_picture
 product\_id
 </td>
 <td style="text-align:left;">
-product identifier. You can use this key to remove duplicate entries if
+Product identifier. You can use this key to remove duplicate entries if
 you’re not interested in studying them.
 </td>
 </tr>
@@ -554,7 +553,7 @@ you’re not interested in studying them.
 theme
 </td>
 <td style="text-align:left;">
-the search term used in the search bar of the website to get these
+The search term used in the search bar of the website to get these
 search results.
 </td>
 </tr>
@@ -563,7 +562,7 @@ search results.
 crawl\_month
 </td>
 <td style="text-align:left;">
-meta: for info only.
+Meta: for info only.
 </td>
 </tr>
 </tbody>
@@ -571,7 +570,7 @@ meta: for info only.
 
 ### 3.3 Data Exploration
 
-The dataset has 1573 rows of observation and 43 columns of variables.
+The dataset has 1,573 rows of observation and 43 columns of variables.
 Variables are currently categorised into 2 types, which are character
 and numeric.
 
@@ -2058,10 +2057,10 @@ colSums(is.na(cloth))
     ##                  crawl_month 
     ##                            0
 
-Looking at the dataset horizontally with the listing of some values
-within each variables and their classified type in R. This will helps to
-see which variables are irrelevant to this project and should be
-removed.
+Following provide a way of looking at the dataset vertically with the
+listing of some values within each variables and their classified type
+in R. This will helps to see which variables are irrelevant to this
+project and should be removed.
 
 ``` r
 glimpse(cloth)
@@ -2113,20 +2112,22 @@ glimpse(cloth)
     ## $ theme                        <chr> "summer", "summer", "summer", "summer", "~
     ## $ crawl_month                  <chr> "2020-08", "2020-08", "2020-08", "2020-08~
 
-I identify that following variables can be removed for various reasons.
+I identified that following variables can be removed for various
+reasons.
 
 -   *title*: Redundant. We have already the translated title in the
     second column.  
 -   *currency\_buyer*: Only one currency “EUR”, it doesn’t provide
     analysis insight.  
 -   *merchant\_profile\_picture*: Contain too many missing values,
-    complete rate was only 14%. This column is also redundant. relevant
-    column indicating the existence of profile picture already.  
--   *has\_urgency\_banner*, complete rate was only 30%.  
+    complete rate was only 14%. This column is also redundant. There is
+    a relevant column already that also indicating the same.  
+-   *has\_urgency\_banner*: Too many missing values in this column,
+    complete rate was only 30%.  
 -   *urgency\_text*: Contain too many missing values, complete rate was
     only 30%.  
--   *merchant\_id*: Redundant. I am not interested in individual
-    merchant, it is an overall analysis.  
+-   *merchant\_id*: Redundant and irrelevant for relationship
+    analysis.  
 -   *product\_url*: I do not need this column for this analysis.  
 -   *product\_picture*: I do not need this column for this analysis.  
 -   *product\_id*: I do not need this column for this analysis.  
@@ -2142,8 +2143,8 @@ levels(c$theme)
 
     ## [1] "summer"
 
--   *crawl\_month*: Only “2020-08-01” in the entire dataset, this column
-    wouldn’t contribute much to the analysis of this project.
+-   *crawl\_month*: Only shows “2020-08-01” in the entire dataset, this
+    column wouldn’t contribute much to the analysis of this project.
 
 ``` r
 c <- cloth %>% 
@@ -2157,27 +2158,22 @@ summary(c$crawl_month)
 
 ## 4 Data Cleaning
 
-Major tasks in this section:
-
--   Remove unrelated variables  
--   Manage missing values  
--   Convert character and some numerical variables into factor
-
 ### 4.1 Remove variables
 
 This section removes variables that have been previously identified to
-be redundant or irrelevant to this project.  
-\* *title*  
-\* *currency\_buyer*  
-\* *merchant\_profile\_picture*  
-\* *has\_urgency\_banner*  
-\* *urgency\_text*  
-\* *merchant\_id*  
-\* *product\_url*  
-\* *product\_picture*  
-\* *product\_id*  
-\* *theme*  
-\* *crawl\_month*
+be redundant or irrelevant to this project.
+
+-   *title*  
+-   *currency\_buyer*  
+-   *merchant\_profile\_picture*  
+-   *has\_urgency\_banner*  
+-   *urgency\_text*  
+-   *merchant\_id*  
+-   *product\_url*  
+-   *product\_picture*  
+-   *product\_id*  
+-   *theme*  
+-   *crawl\_month*
 
 ``` r
 # Preserving the original data "cloth", and create a new variable "cloth2" 
@@ -2188,8 +2184,8 @@ cloth2 <- cloth %>%
                 -theme, -crawl_month)
 ```
 
-I will assess the remaining variables again in later stage and would
-remove them if I found that they don’t provide value to this analysis.
+I will assess the remaining variables in the dataset in later stage and
+would remove them if required.
 
 ### 4.2 Remove missing values
 
@@ -2206,24 +2202,20 @@ cloth2 <- na.omit(cloth2)
     ## 1 7.374444
 
 There are ways to manage missing values such as imputation using mean,
-median, or machine learning models. However, I remove the missing values
-for simplicity of this project. Only 7.37% of data is removed, and I
+median, or using imputation models from the R’s caret package. However,
+I removed the missing values instead of imputating them just to make
+this project simpler. Additionally, only 7.37% of data is removed, and I
 still have 92.63% (1457 rows) of data for this analysis.
-
-Why missing values need to be managed? It would affect the result of any
-metrics, for example, the average, as well as affecting the performance
-of machine learning models.
 
 ### 4.3 Factor conversion
 
-In order for effective analysis, convert character variables into factor
-is essential. Additionally, some numeric variables will be converted
-into factor type such as binary vector or vector that uses numbers for
-grouping purposes.
+This section converts character variables and several numerical
+variables into factor.
 
 Converting data into factor helps (1) the overall R processing speed,
-(2) initial the role of these numbers in data categorisation, (3) Enable
-some functions of R that require vectors to be in factor format.
+(2) initiate the role of these variables in data categorisation, (3)
+regression analysis, (4) Enable some functions of R that require vectors
+to be in factor format.
 
 ``` r
 cloth2 <- cloth2 %>% 
@@ -2236,31 +2228,23 @@ cloth2 <- cloth2 %>%
 
 ### 4.4 Typos in the factor variables
 
-I will check typos in the factor variables (character type) that are
-useful for data categorisation during analysis. An important criteria I
-will check on is the number of repetitation within these factors. The
-factor with high repetition of levels will be assessed in this section.
+This section checks typos in the factor variables. I have identified
+many typos in following variables.
 
-I have identified them, which are:
+**1. Cleaning typos in the “Product\_color”**
 
--   product\_color  
--   product\_variation\_size\_id  
--   origin\_country
+I will convert -
 
-**1. Product\_color**
-
-A lot of typos need to be cleaned, which are:
-
--   *army green* and *Army green* into *armygreen*
--   *Black* into *black*
--   *Blue* into *blue*
--   *gray* into *grey*
--   *light green* into *lightgreen*
--   *navy blue* into *navyblue*
--   *Pink* into *pink*
--   *RED* into *red*
--   *Rose red* into *rosered*
--   *White* into *white*
+-   *army green* and *Army green* into *armygreen*  
+-   *Black* into *black*  
+-   *Blue* into *blue*  
+-   *gray* into *grey*  
+-   *light green* into *lightgreen*  
+-   *navy blue* into *navyblue*  
+-   *Pink* into *pink*  
+-   *RED* into *red*  
+-   *Rose red* into *rosered*  
+-   *White* into *white*  
 -   *wine red* into *winered*
 
 ``` r
@@ -2341,9 +2325,9 @@ cloth2 <- cloth2 %>%
 
 **2. product\_variation\_size\_id**
 
-The data is too messy in this column. I am doing some buik computation
-to aid the cleaning a little. Trim leading and trailing white space,
-remove punctuation, and set all levels to Upper case.
+The data in this variable is too messy. I will do some buik computation
+to aid the cleaning a little, including trimming leading and trailing
+white spaces, remove punctuation, and set all levels to upper case.
 
 ``` r
 cloth2 <- cloth2 %>% 
@@ -3006,10 +2990,11 @@ summary(cloth2$origin_country)
 
 ### 4.5 Examining the Rating
 
-There are 5 columns for different counts of rating and a “rating\_count”
-representing the total number of rates received. In the aim of analysis
-of this project, I do not need these columns because I only need the
-“rating” column which indicates the overall rating.
+There are 5 columns for different counts of rating from rating 1 to
+rating 5. There is also a “rating\_count” representing the total number
+of rates received. In the aim of analysis of this project, I do not need
+these columns because I only need the “rating” column which indicates
+the overall rating.
 
 ``` r
 rate <- cloth2 %>% dplyr::select(rating, rating_count, rating_five_count, rating_four_count, rating_three_count,
@@ -3441,6 +3426,7 @@ df5.6.2 <- df5.6 %>%
   slice(c(1:50))
 
 
+
 # plot
 
 ggplot(df5.6.2, aes(y = fct_reorder(word, total_sold), x = total_sold, group = 1)) +
@@ -3729,6 +3715,14 @@ ggplot(df5.7, aes(x = badge_type, y = units_sold, fill = result)) +
 
 ![](summer_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
 
+-   Product with Badge of fast shipping has higher median and mean of
+    the number of unit soil per product.
+
+-   There is no much different between whether has a product with a
+    local-produce badge.
+
+-   Good quality produce has higher units sold.
+
 ### 5.9 EXTRA: Advertisement Boost and Product Success
 
 Following plot shows that advertisement boost does not affect the
@@ -3860,7 +3854,7 @@ cloth2 <- cloth2 %>%
   left_join(seller_tags, by = "merchant_name")
 ```
 
-**Primary Removing**
+**Primary Removal**
 
 Removing variables that are irrelevant to this analysis based on my
 domain knowledge. I will based on the characteristics of features, for
@@ -6949,157 +6943,281 @@ corrplot(cor(df_cor), method = "number", type = "upper")
 
 ![](summer_files/figure-gfm/unnamed-chunk-59-1.png)<!-- -->
 
-``` r
-names(cloth3)
-```
-
-    ##  [1] "price"                        "price_class"                 
-    ##  [3] "retail_price"                 "units_sold"                  
-    ##  [5] "uses_ad_boosts"               "rating"                      
-    ##  [7] "badges_count"                 "badge_local_product"         
-    ##  [9] "badge_product_quality"        "badge_fast_shipping"         
-    ## [11] "product_variation_inventory"  "shipping_option_price"       
-    ## [13] "shipping_is_express"          "countries_shipped_to"        
-    ## [15] "origin_country"               "merchant_rating_count"       
-    ## [17] "merchant_rating"              "merchant_has_profile_picture"
-    ## [19] "tags_count"                   "shipping_name"               
-    ## [21] "product_sizes"                "product_colors"
-
 ### 6.4 Multiple Linear Regression
 
+Before starting the very first preliminary model, I have found that
+there are several cleaning tasks that I missed, which are:
+
+-   Converting *shipping\_option\_price* from double into factor. It has
+    discrete numeric ranking from 1 to 7, instead of floating prices.
+
+-   *“merchant\_rating\_count”* is not required in this analysis. There
+    is a relevant column *”merchant\_rating“* already which better
+    describes the rating of each merchant.
+
+-   Removing *shipping\_is\_express*, there is only 1 item was shipped
+    in expressed, and remaining 1432 (99.9%) are not shipped in
+    expressed. There is not enough samples to effect of studying the
+    effect of expressed shipping on the number of units sold for each
+    item.
+
+-   Removing *price\_class* as it seems not directly related to product
+    sold. I have more interested in the relation between column of
+    “price” and the outcome variable.
+
+-   Removing *origin\_country*, there is no information in the
+    description table stating further detail of this column.
+    Furthermore, 96% of data in this column is dominated by China, and
+    the rest of the countries have not enough sample size to study their
+    effects on the number of product sold for each product type.
+
+-   Removing *shipping\_option\_price* because it is correlated with the
+    column “price” at a level that multicollinearity can be a issue.
+
 ``` r
-names(cloth3)
+cloth3 <- cloth3 %>% 
+  mutate(shipping_option_price = as.factor(shipping_option_price)) %>% 
+  dplyr::select(-price_class, -merchant_rating_count, -shipping_is_express, -origin_country, -shipping_option_price)
 ```
 
-    ##  [1] "price"                        "price_class"                 
-    ##  [3] "retail_price"                 "units_sold"                  
-    ##  [5] "uses_ad_boosts"               "rating"                      
-    ##  [7] "badges_count"                 "badge_local_product"         
-    ##  [9] "badge_product_quality"        "badge_fast_shipping"         
-    ## [11] "product_variation_inventory"  "shipping_option_price"       
-    ## [13] "shipping_is_express"          "countries_shipped_to"        
-    ## [15] "origin_country"               "merchant_rating_count"       
-    ## [17] "merchant_rating"              "merchant_has_profile_picture"
-    ## [19] "tags_count"                   "shipping_name"               
-    ## [21] "product_sizes"                "product_colors"
+Create data partition.
 
 ``` r
-model_mlr <- lm(units_sold ~ ., data = cloth3)
+set.seed(123)
 
-summary(model_mlr) 
+# create data partition
+
+training.set <- cloth3$units_sold %>% createDataPartition(p = 0.8, list = F)
+
+
+# Create train and test set
+
+
+train.data <- cloth3[training.set, ]
+test.data <- cloth3[-training.set, ]
+```
+
+``` r
+summary(train.data)
+```
+
+    ##      price         retail_price      units_sold    uses_ad_boosts
+    ##  Min.   : 1.000   Min.   :  1.00   Min.   :    2   0:643         
+    ##  1st Qu.: 5.840   1st Qu.:  7.00   1st Qu.:  100   1:505         
+    ##  Median : 8.000   Median : 10.00   Median : 1000                 
+    ##  Mean   : 8.304   Mean   : 22.85   Mean   : 3531                 
+    ##  3rd Qu.:11.000   3rd Qu.: 26.00   3rd Qu.: 5000                 
+    ##  Max.   :27.000   Max.   :169.00   Max.   :20000                 
+    ##                                                                  
+    ##      rating       badges_count    badge_local_product badge_product_quality
+    ##  Min.   :1.000   Min.   :0.0000   0:1131              0:1064               
+    ##  1st Qu.:3.500   1st Qu.:0.0000   1:  17              1:  84               
+    ##  Median :3.820   Median :0.0000                                            
+    ##  Mean   :3.769   Mean   :0.0993                                            
+    ##  3rd Qu.:4.090   3rd Qu.:0.0000                                            
+    ##  Max.   :5.000   Max.   :2.0000                                            
+    ##                                                                            
+    ##  badge_fast_shipping product_variation_inventory countries_shipped_to
+    ##  0:1135              Min.   : 1.00               Min.   :  6.00      
+    ##  1:  13              1st Qu.: 6.00               1st Qu.: 31.00      
+    ##                      Median :50.00               Median : 40.00      
+    ##                      Mean   :32.76               Mean   : 39.83      
+    ##                      3rd Qu.:50.00               3rd Qu.: 43.00      
+    ##                      Max.   :50.00               Max.   :139.00      
+    ##                                                                      
+    ##  merchant_rating merchant_has_profile_picture   tags_count    
+    ##  Min.   :2.941   0:986                        Min.   :  9.00  
+    ##  1st Qu.:3.914   1:162                        1st Qu.: 26.00  
+    ##  Median :4.039                                Median : 47.50  
+    ##  Mean   :4.026                                Mean   : 62.72  
+    ##  3rd Qu.:4.151                                3rd Qu.: 80.00  
+    ##  Max.   :4.578                                Max.   :326.00  
+    ##                                                               
+    ##             shipping_name      product_sizes      product_colors
+    ##  Livraison standard:1099   L          : 44   Other_colors:240   
+    ##  Other_shipping    :  49   M          :145   black       :219   
+    ##                            Other_sizes: 83   white       :182   
+    ##                            S          :518   yellow      : 83   
+    ##                            XS         :264   blue        : 79   
+    ##                            XXL        : 16   red         : 78   
+    ##                            XXS        : 78   (Other)     :267
+
+``` r
+model_mlr <- lm(units_sold ~., data = train.data)
+
+summary(model_mlr)
 ```
 
     ## 
     ## Call:
-    ## lm(formula = units_sold ~ ., data = cloth3)
+    ## lm(formula = units_sold ~ ., data = train.data)
     ## 
     ## Residuals:
     ##    Min     1Q Median     3Q    Max 
-    ## -11405  -3123  -1499   1334  19368 
+    ##  -7549  -3252  -1554   1321  18219 
     ## 
     ## Coefficients: (1 not defined because of singularities)
-    ##                                   Estimate   Std. Error t value
-    ## (Intercept)                   -8229.783752  3325.507316  -2.475
-    ## price                           299.806672   131.086262   2.287
-    ## price_classEUR10-20           -1872.425661   610.831336  -3.065
-    ## price_classEUR20-30           -2699.921050  2358.693232  -1.145
-    ## price_classEUR40-50           -3422.099019  2777.455252  -1.232
-    ## retail_price                    -12.090611     5.008024  -2.414
-    ## uses_ad_boosts1                 367.191890   280.607787   1.309
-    ## rating                          543.146789   306.183333   1.774
-    ## badges_count                   -578.607463  1429.480342  -0.405
-    ## badge_local_product1            689.124377  2086.046670   0.330
-    ## badge_product_quality1         1219.612551  1514.351600   0.805
-    ## badge_fast_shipping1                    NA           NA      NA
-    ## product_variation_inventory      23.787439     7.689253   3.094
-    ## shipping_option_price          -675.461597   345.784714  -1.953
-    ## shipping_is_express1          -1117.199494  5576.398331  -0.200
-    ## countries_shipped_to            -24.183403     7.198140  -3.360
-    ## origin_countryGB               -399.442380  5115.955785  -0.078
-    ## origin_countrySG               7490.392022  3617.762728   2.070
-    ## origin_countryUS              -1348.912774   959.414790  -1.406
-    ## origin_countryVE              -1562.497796  2324.097108  -0.672
-    ## merchant_rating_count             0.029728     0.003863   7.695
-    ## merchant_rating                2411.917186   765.267798   3.152
-    ## merchant_has_profile_picture1   607.880037   402.092316   1.512
-    ## tags_count                        0.692065     2.731934   0.253
-    ## shipping_nameOther_shipping     -69.800134   688.918205  -0.101
-    ## product_sizesM                 -354.424777   820.866617  -0.432
-    ## product_sizesOther_sizes      -1876.280365   900.526956  -2.084
-    ## product_sizesS                -1122.618529   758.752045  -1.480
-    ## product_sizesXS               -2373.506984   803.879042  -2.953
-    ## product_sizesXXL              -2960.073403  1422.705442  -2.081
-    ## product_sizesXXS              -2495.918470   943.612801  -2.645
-    ## product_colorsblack             956.406296   952.787306   1.004
-    ## product_colorsblue              425.682027  1040.411367   0.409
-    ## product_colorsgreen             258.164323  1067.206665   0.242
-    ## product_colorsgrey              866.212222  1084.430802   0.799
-    ## product_colorsOther_colors     1125.211075   953.394933   1.180
-    ## product_colorspink              -84.290791  1036.408958  -0.081
-    ## product_colorspurple           1788.071881  1170.830124   1.527
-    ## product_colorsred               403.001104  1054.032161   0.382
-    ## product_colorswhite             848.502922   957.530198   0.886
-    ## product_colorsyellow           -862.449645  1053.257353  -0.819
-    ##                                         Pr(>|t|)    
-    ## (Intercept)                             0.013451 *  
-    ## price                                   0.022340 *  
-    ## price_classEUR10-20                     0.002216 ** 
-    ## price_classEUR20-30                     0.252543    
-    ## price_classEUR40-50                     0.218120    
-    ## retail_price                            0.015896 *  
-    ## uses_ad_boosts1                         0.190900    
-    ## rating                                  0.076294 .  
-    ## badges_count                            0.685710    
-    ## badge_local_product1                    0.741186    
-    ## badge_product_quality1                  0.420744    
-    ## badge_fast_shipping1                          NA    
-    ## product_variation_inventory             0.002017 ** 
-    ## shipping_option_price                   0.050970 .  
-    ## shipping_is_express1                    0.841241    
-    ## countries_shipped_to                    0.000801 ***
-    ## origin_countryGB                        0.937777    
-    ## origin_countrySG                        0.038594 *  
-    ## origin_countryUS                        0.159955    
-    ## origin_countryVE                        0.501502    
-    ## merchant_rating_count         0.0000000000000266 ***
-    ## merchant_rating                         0.001658 ** 
-    ## merchant_has_profile_picture1           0.130814    
-    ## tags_count                              0.800055    
-    ## shipping_nameOther_shipping             0.919312    
-    ## product_sizesM                          0.665976    
-    ## product_sizesOther_sizes                0.037384 *  
-    ## product_sizesS                          0.139217    
-    ## product_sizesXS                         0.003204 ** 
-    ## product_sizesXXL                        0.037653 *  
-    ## product_sizesXXS                        0.008259 ** 
-    ## product_colorsblack                     0.315650    
-    ## product_colorsblue                      0.682494    
-    ## product_colorsgreen                     0.808888    
-    ## product_colorsgrey                      0.424559    
-    ## product_colorsOther_colors              0.238116    
-    ## product_colorspink                      0.935191    
-    ## product_colorspurple                    0.126943    
-    ## product_colorsred                       0.702266    
-    ## product_colorswhite                     0.375697    
-    ## product_colorsyellow                    0.413018    
+    ##                                 Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)                   -10605.180   3701.431  -2.865 0.004246 ** 
+    ## price                            -83.150     47.539  -1.749 0.080553 .  
+    ## retail_price                      -8.358      5.736  -1.457 0.145378    
+    ## uses_ad_boosts1                   69.076    319.082   0.216 0.828650    
+    ## rating                           758.829    339.020   2.238 0.025398 *  
+    ## badges_count                   -1260.470   1617.823  -0.779 0.436077    
+    ## badge_local_product1            1990.445   2523.824   0.789 0.430477    
+    ## badge_product_quality1          1738.382   1708.669   1.017 0.309188    
+    ## badge_fast_shipping1                  NA         NA      NA       NA    
+    ## product_variation_inventory       30.316      8.854   3.424 0.000640 ***
+    ## countries_shipped_to             -26.242      8.401  -3.124 0.001831 ** 
+    ## merchant_rating                 3127.455    856.735   3.650 0.000274 ***
+    ## merchant_has_profile_picture1   1013.988    454.868   2.229 0.025999 *  
+    ## tags_count                         5.042      3.057   1.649 0.099440 .  
+    ## shipping_nameOther_shipping     -487.049    770.487  -0.632 0.527430    
+    ## product_sizesM                  -387.008    912.297  -0.424 0.671492    
+    ## product_sizesOther_sizes       -1535.034    994.608  -1.543 0.123027    
+    ## product_sizesS                  -903.272    830.603  -1.087 0.277055    
+    ## product_sizesXS                -2291.626    883.878  -2.593 0.009647 ** 
+    ## product_sizesXXL               -2361.689   1547.529  -1.526 0.127267    
+    ## product_sizesXXS               -2479.638   1041.209  -2.381 0.017409 *  
+    ## product_colorsblack              355.146   1106.190   0.321 0.748230    
+    ## product_colorsblue               439.192   1202.072   0.365 0.714910    
+    ## product_colorsgreen               37.565   1242.462   0.030 0.975885    
+    ## product_colorsgrey              1214.007   1247.782   0.973 0.330797    
+    ## product_colorsOther_colors       919.614   1103.259   0.834 0.404717    
+    ## product_colorspink              -147.612   1207.958  -0.122 0.902763    
+    ## product_colorspurple            1879.636   1355.101   1.387 0.165693    
+    ## product_colorsred                 57.656   1212.916   0.048 0.962096    
+    ## product_colorswhite              506.196   1110.208   0.456 0.648517    
+    ## product_colorsyellow           -1099.811   1208.222  -0.910 0.362875    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 5069 on 1393 degrees of freedom
-    ## Multiple R-squared:  0.1582, Adjusted R-squared:  0.1346 
-    ## F-statistic: 6.711 on 39 and 1393 DF,  p-value: < 0.00000000000000022
+    ## Residual standard error: 5195 on 1118 degrees of freedom
+    ## Multiple R-squared:  0.108,  Adjusted R-squared:  0.08488 
+    ## F-statistic: 4.669 on 29 and 1118 DF,  p-value: 0.00000000000001251
+
+Based on statistical summary from the multiple linear regression model,
+the p-value of the F-statistics is less than 0.05. which indicates that
+at least 1 predictor variable is statistical significant. The adjusted
+R-squared is extremely low at only 8.7% of the variability of the y
+variable can be explained by this model, it indicates that it is a bad
+model if one wants to use it for prediction. The variability of
+predictions (95% Prediction interval) that this model can supply is very
+large and therefore affecting the precision of these predictions.
+
+Despite the low adjusted R-squared, there are significant trends. These
+associated predictors still provide information about the responding
+variable (unit\_sold). It is important to know that even though
+R-squared is low, low P values will still indicate the true relationship
+between associated predictors and the responding variable.
+
+Extracting the data frame that contains the coefficient estimates and
+p-values from the model. Statistically related features (variables) are:
 
 ``` r
-plot(model_mlr)
+# df
+
+df6.4 <- data.frame(summary(model_mlr)$coef) %>% 
+  rename(P_value = Pr...t..) %>% 
+  filter(P_value < 0.05) %>% 
+  rownames_to_column() %>% 
+  slice(-1) %>% 
+  rename(feature = rowname) %>% 
+  mutate(sig = case_when(P_value < 0.05 & P_value > 0.01 ~ "*",
+                         P_value < 0.01 & P_value > 0.001 ~ "**",
+                         P_value < 0.001 ~ "***",
+                         TRUE ~ " "),
+         feature = as.factor(feature)) %>% 
+  arrange(P_value) 
+
+df6.4
 ```
 
-    ## Warning: not plotting observations with leverage one:
-    ##   607, 1202
+    ##                         feature    Estimate  Std..Error   t.value      P_value
+    ## 1               merchant_rating  3127.45451  856.735200  3.650433 0.0002738984
+    ## 2   product_variation_inventory    30.31638    8.854208  3.423951 0.0006395477
+    ## 3          countries_shipped_to   -26.24196    8.400655 -3.123799 0.0018312427
+    ## 4               product_sizesXS -2291.62567  883.877720 -2.592695 0.0096469909
+    ## 5              product_sizesXXS -2479.63796 1041.209345 -2.381498 0.0174089792
+    ## 6                        rating   758.82899  339.020214  2.238300 0.0253977312
+    ## 7 merchant_has_profile_picture1  1013.98818  454.867548  2.229194 0.0259990780
+    ##   sig
+    ## 1 ***
+    ## 2 ***
+    ## 3  **
+    ## 4  **
+    ## 5   *
+    ## 6   *
+    ## 7   *
 
-![](summer_files/figure-gfm/unnamed-chunk-63-1.png)<!-- -->![](summer_files/figure-gfm/unnamed-chunk-63-2.png)<!-- -->![](summer_files/figure-gfm/unnamed-chunk-63-3.png)<!-- -->![](summer_files/figure-gfm/unnamed-chunk-63-4.png)<!-- -->
+Visualise the statistics that only shows variables that are
+significantly related to units\_sold.
 
-## Legality
+``` r
+# plot
 
-## Reference
+ ggplot(df6.4, aes(y = Estimate, x = fct_reorder(feature, -Estimate), colour = feature)) +
+  geom_bar(stat = "identity", alpha = 0) +
+  theme_modern_rc() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 10, size = 10, hjust = 0.7),
+        plot.margin = unit(c(1,1,1,1), "cm")) +
+  geom_text(aes(label = paste0("(", round(Estimate, 2), ")")), vjust = 1, colour = "white") +
+  geom_text(aes(label = sig), size = 8, colour = "white") +
+  labs(x = "Variables", 
+       y = "Coefficient Estimate",
+       subtitle = "*: P<0.05, **: P<0.01, ***: P<0.001",
+       title = "Coefficient of Variables in Relation to Unit_Sold") +
+  scale_y_continuous(lim = c(-3000, 3500), breaks = seq(-3000, 3500, 1000))
+```
+
+![](summer_files/figure-gfm/unnamed-chunk-65-1.png)<!-- -->
+
+*Insights*
+
+Surprisingly, price did not affect the number of sales significantly. I
+can see that the rating of merchant, product, and if product has profile
+picture significant affect the number of units sold for a type of
+product positively. The more inventory the seller has will also affect
+the number of unit sold by the seller positively, while keeping other
+variables constant.
+
+Negatively related variables are countries shipped to, product size XS
+and XXS. The higher the amount of these products, while keeping other
+variables constant.
+
+In the next two section, I will compare this result with other model.
+
+### 6.5 Random Forest’s Important Plot
+
+Applying a random forest important plot and shown similar results. Many
+top important variables indicated by random forest model are also
+indicated by the previous multiple linear regression model.
+
+``` r
+model_rf <- train(units_sold ~., data = train.data,
+                  trControl = trainControl("cv", number = 10),
+                  importance = TRUE)
+```
+
+Code the plot.
+
+``` r
+plot(varImp(model_rf))
+```
+
+![](summer_files/figure-gfm/unnamed-chunk-67-1.png)<!-- -->
+
+## 7 CONCLUSION
+
+## 8 Legality
+
+This project is created for skills demonstration and learning Only.
+
+## 9 Reference
 
 <https://www.kaggle.com/jmmvutu/summer-products-and-sales-in-ecommerce-wish>
+
+Minitab Blog Editor 2014, *How to Interpret a Regression Model with Low
+R-squared and Low P values*, viewed 16 October 2021,
+<https://blog.minitab.com/en/adventures-in-statistics-2/how-to-interpret-a-regression-model-with-low-r-squared-and-low-p-values>
