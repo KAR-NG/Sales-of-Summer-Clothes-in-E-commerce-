@@ -55,7 +55,7 @@ Kar Ng
 
 ------------------------------------------------------------------------
 
-![](https://raw.githubusercontent.com/KAR-NG/cloth/main/pic2_thumbnail.png)
+![](https://raw.githubusercontent.com/KAR-NG/Sales-of-Summer-Clothes-in-E-commerce-/main/pic2_thumbnail.png)
 
 ------------------------------------------------------------------------
 
@@ -69,12 +69,13 @@ Random Forest.
 
 Results show the higher the magnitude of prices being dropped shown on
 the listing page, the better the sales of a product, and the best range
-of drops fall between 75 - 100%. The 5 best cloth colours are black,
-white, grey, purple, and blue. The top 5 best-selling cloth sizes are S,
-M, XS, L and XXS. A product needs to have a rating of above 3 to ensure
-sales and popularity. The fame of a merchant has an exponential positive
-relationship with the sales of a product. Most products have 25 tags,
-and the best selling products have a wide range of tags from 25 to 125.
+of drops fall between 75 - 100%. The 5 best clothes colours are black,
+white, grey, purple, and blue. The top 5 best-selling clothes sizes are
+S, M, XS, L and XXS. A product needs to have a rating of above 3 to
+ensure sales and popularity. The fame of a merchant has an exponential
+positive relationship with the sales of a product. Most products have 25
+tags, and the best selling products have a wide range of tags from 25 to
+125.
 
 Among 1838 words detected from the massive lists of tags in each
 product, the top 10 best-selling words are fashion, women’s, women,
@@ -7753,11 +7754,11 @@ Following are conclusions found.
     sales of a product. The best range of price drops fall between 75%
     to 100%.
 
--   Among 87 colours, the top 5 best selling cloth colours are black,
+-   Among 87 colours, the top 5 best selling clothes colours are black,
     white, grey, purple, and blue, and they account for 25%, 17%, 7%,
     5%, and 5% of the total units sold.
 
--   Among 63 sizes category, the top 5 best-selling cloth sizes are S,
+-   Among 63 sizes category, the top 5 best-selling clothes sizes are S,
     M, XS, L and XXS, and they account for 49%, 22%, 14%, 5%, and 3% of
     the total units sold.
 
