@@ -14,18 +14,31 @@ always_allow_html: yes
 ***
 
 
+![](https://raw.githubusercontent.com/KAR-NG/cloth/main/pic2_thumbnail.png)
+
 
 ***
 
 
-
 ## 1 SUMMARY
 
+This project works on a clothing dataset to find trends in many sales relevant variables. 22 graphs were synthesied and relationships between variables with the amount of units sold per type of product were studied using multiple linear regression with the aid of Important-Plot from Random Forest.
+
+Results show the higher the magnitude of prices being dropped shown on the listing page, the better the sales of a product, and the best range of drops fall between 75 - 100%. The 5 best cloth colours are black, white, grey, purple, and blue. The top 5 best-selling cloth sizes are S, M, XS, L and XXS. A product needs to have a rating of above 3 to ensure sales and popularity. The fame of a merchant has an exponential positive relationship with the sales of a product. Most products have 25 tags, and the best selling products have a wide range of tags from 25 to 125.
+
+Among 1838 words detected from the massive lists of tags in each product, the top 10 best-selling words are fashion, women's, women, summer, casual, sleeveless, tops, sexy, size, and dress. Whereas, the top 10 worse-selling words used as tags are summertshirt, butterflyprintskirt, dressesforwomensummer, icesilk, antifoggoggle, beds, char, sushionbed, divingequipment, and divingmask. In term of popularity among merchants, "fashion", "women's", and "women" are often used together in tags. In term of product sales, "fashion", "women's", and "women" are also often used together in tags.
+
+Only product quality will help driving product success rather than whether product is fast shipped or locally produced. Advertisement boost did not affect the success of a product. Significant variables (p-value < 0.05) that has positive relationship with sales are the (1) the rating of merchant, (2) rating of product, (3) the product has profile picture, and (4) the amount of inventory the seller has.
 
 
 
 
-                                  
+*Highlights*
+
+![](https://raw.githubusercontent.com/KAR-NG/cloth/main/pic1_graphs.png)
+
+
+                        
 
 ## 2 R PACKAGES
 
@@ -46,7 +59,6 @@ library(car)
 library(widyr)
 library(igraph)
 library(ggraph)
-library(plotly)
 
 # Format setting
 
@@ -81,7 +93,7 @@ The dataset is downloaded from kaggle website, visit this [Link](https://www.kag
 
 ### 4.1 Data Importation
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 cloth <- read_csv("summer.csv")
 
 ```
@@ -955,7 +967,7 @@ The basic of the plot is still the same, there was just a minor change of its po
 
 Functionisation of workflow above to allow customisable adjustments for different min_user_count and min_correlation.
 
-```{r, fig.width=10, fig.height=2, warning=FALSE}
+```{r, fig.width=8, fig.height=6, warning=FALSE}
 
 set.seed(123)
 
@@ -1125,7 +1137,7 @@ ggplot(df5.8, aes(x = uses_ad_boosts, y = units_sold, colour = uses_ad_boosts)) 
 
 Surprisingly, more units were sold without using the function of advertisement boost from *Wish*. 
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 
 # df
 
@@ -1154,10 +1166,7 @@ ggplot(df5.8.2, aes(x = uses_ad_boosts, y = total_unit_sold, colour = uses_ad_bo
                      lim = c(0, 4000000))
   
 
-
 ```
-
-
 
 
 ## 7 STATISTICAL ANALYSIS
@@ -1169,7 +1178,7 @@ This section will start to evaluate the statistical relationship between *how we
 
 **Primary Addition**
 
-The number of tags in relation to the number of each product sold will be very interesting to include. This value can be extracted from the "tags" column that has a massive amount of texts describing relevant tags. This extraction *has been done* in section 5.5. Here, I will just add the extracted column into the current dataset. 
+The number of tags in relation tgit o the number of each product sold will be very interesting to include. This value can be extracted from the "tags" column that has a massive amount of texts describing relevant tags. This extraction *has been done* in section 5.5. Here, I will just add the extracted column into the current dataset. 
 
 ```{r}
 cloth2 <- cloth2 %>% 
@@ -1714,7 +1723,7 @@ From the dataset of the sales of summer clothes in E-commerce Wish, Following ar
 
 * Advertisement boost did not affect the success of a product. More units were sold without advertisement boost.
 
-* Significant variables (p-value < 0.05) that has positive relationship with sales are the (1) the rating of merchant, (2) rating of product, (3) the product has profile picture, and (4) Inventory the seller has。
+* Significant variables (p-value < 0.05) that has positive relationship with sales are the (1) the rating of merchant, (2) rating of product, (3) the product has profile picture, and (4) Inventory the seller has.
 
 *  Significant variables (p-value < 0.05) that affect the sales negatively are the number of countries shipped to, product size XS, and XXS.
 

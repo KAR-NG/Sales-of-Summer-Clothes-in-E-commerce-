@@ -55,9 +55,47 @@ Kar Ng
 
 ------------------------------------------------------------------------
 
+![](https://raw.githubusercontent.com/KAR-NG/cloth/main/pic2_thumbnail.png)
+
 ------------------------------------------------------------------------
 
 ## 1 SUMMARY
+
+This project works on a clothing dataset to find trends in many sales
+relevant variables. 22 graphs were synthesied and relationships between
+variables with the amount of units sold per type of product were studied
+using multiple linear regression with the aid of Important-Plot from
+Random Forest.
+
+Results show the higher the magnitude of prices being dropped shown on
+the listing page, the better the sales of a product, and the best range
+of drops fall between 75 - 100%. The 5 best cloth colours are black,
+white, grey, purple, and blue. The top 5 best-selling cloth sizes are S,
+M, XS, L and XXS. A product needs to have a rating of above 3 to ensure
+sales and popularity. The fame of a merchant has an exponential positive
+relationship with the sales of a product. Most products have 25 tags,
+and the best selling products have a wide range of tags from 25 to 125.
+
+Among 1838 words detected from the massive lists of tags in each
+product, the top 10 best-selling words are fashion, women’s, women,
+summer, casual, sleeveless, tops, sexy, size, and dress. Whereas, the
+top 10 worse-selling words used as tags are summertshirt,
+butterflyprintskirt, dressesforwomensummer, icesilk, antifoggoggle,
+beds, char, sushionbed, divingequipment, and divingmask. In term of
+popularity among merchants, “fashion”, “women’s”, and “women” are often
+used together in tags. In term of product sales, “fashion”, “women’s”,
+and “women” are also often used together in tags.
+
+Only product quality will help driving product success rather than
+whether product is fast shipped or locally produced. Advertisement boost
+did not affect the success of a product. Significant variables (p-value
+&lt; 0.05) that has positive relationship with sales are the (1) the
+rating of merchant, (2) rating of product, (3) the product has profile
+picture, and (4) the amount of inventory the seller has.
+
+*Highlights*
+
+![](https://raw.githubusercontent.com/KAR-NG/cloth/main/pic1_graphs.png)
 
 ## 2 R PACKAGES
 
@@ -78,7 +116,6 @@ library(car)
 library(widyr)
 library(igraph)
 library(ggraph)
-library(plotly)
 
 # Format setting
 
@@ -123,17 +160,6 @@ The dataset is downloaded from kaggle website, visit this
 ``` r
 cloth <- read_csv("summer.csv")
 ```
-
-    ## Rows: 1573 Columns: 43
-
-    ## -- Column specification --------------------------------------------------------
-    ## Delimiter: ","
-    ## chr (19): title, title_orig, currency_buyer, tags, product_color, product_va...
-    ## dbl (24): price, retail_price, units_sold, uses_ad_boosts, rating, rating_co...
-
-    ## 
-    ## i Use `spec()` to retrieve the full column specification for this data.
-    ## i Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
 ### 4.2 Data Description
 
@@ -4362,42 +4388,6 @@ ggplot(df5.8.2, aes(x = uses_ad_boosts, y = total_unit_sold, colour = uses_ad_bo
                      lim = c(0, 4000000))
 ```
 
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
-    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-    ## font family not found in Windows font database
-
-    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, : font
-    ## family not found in Windows font database
-
 ![](summer_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
 
 ## 7 STATISTICAL ANALYSIS
@@ -4410,9 +4400,9 @@ information is stored within the feature “units\_sold”.
 
 **Primary Addition**
 
-The number of tags in relation to the number of each product sold will
-be very interesting to include. This value can be extracted from the
-“tags” column that has a massive amount of texts describing relevant
+The number of tags in relation tgit o the number of each product sold
+will be very interesting to include. This value can be extracted from
+the “tags” column that has a massive amount of texts describing relevant
 tags. This extraction *has been done* in section 5.5. Here, I will just
 add the extracted column into the current dataset.
 
@@ -7810,7 +7800,7 @@ Following are conclusions found.
 -   Significant variables (p-value &lt; 0.05) that has positive
     relationship with sales are the (1) the rating of merchant, (2)
     rating of product, (3) the product has profile picture, and (4)
-    Inventory the seller has。
+    Inventory the seller has.
 
 -   Significant variables (p-value &lt; 0.05) that affect the sales
     negatively are the number of countries shipped to, product size XS,
