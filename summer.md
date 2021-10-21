@@ -1,4 +1,4 @@
-Data Analysis plus model development for product success
+Sales of Summer Clothes in E-commerce
 ================
 Kar Ng
 2021

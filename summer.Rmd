@@ -1,5 +1,5 @@
 ---
-title: "Data Analysis plus model development for product success"
+title: "Sales of Summer Clothes in E-commerce "
 author: "Kar Ng"
 date: "2021"
 output: 
